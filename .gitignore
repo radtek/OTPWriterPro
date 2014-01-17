@@ -1,0 +1,13 @@
+/Debug
+/ipch
+/Release
+/OTPWriterPro.sdf
+/Release
+/OTPWriterPro.suo
+Debug
+ipch
+Release
+cachedir
+*.user
+*~
+*.aps
