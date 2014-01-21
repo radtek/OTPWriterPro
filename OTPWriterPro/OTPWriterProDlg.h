@@ -71,7 +71,11 @@ public:
 	CHgzComboBox m_ctrlComboEdit;
 	CHgzComboBox m_ctrlChipSel;
 	CButton m_ctrlCodeSaveAs;
-	afx_msg void OnBnClickedButton7();
+	afx_msg void OnBnClickedButtonRead();
+
+	unsigned int GetStartAddress();
+
+	
 	CHgzComboBox m_ctrlMemAddrBegin;
 	CHgzComboBox m_ctrlDataLength;
 	CButton m_ctrlSaveAppend;
@@ -123,28 +127,43 @@ public:
 
 	enum _FLAG_t {
 		process_state_idle = 0,
-		process_state_read,
-		process_state_write
+		process_state_read = HS_MEM_READ,
+		process_state_write = HS_MEM_WRITE,
+		process_state_verify = HS_MEM_READ,
+		process_state_encrypt = HS_MEM_WRDIS,
+		process_state_erase = HS_MEM_ERASE_PAGE
 	} process_state;
 	
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 
-	unsigned char wbuf[0x10000];
-	long long wbuf_num;
-	long long wbuf_data_length;
+	unsigned char m_buf[0x10000];
+	long long m_buf_num;
+	long long m_buf_data_length;
 	unsigned char rbuf[0x10000];
-	long long rbuf_num;
-	long long rbuf_data_length;
+// 	long long rbuf_num;
+// 	long long rbuf_data_length;
 
 	afx_msg void OnBnClickedButtonWrite();
+
+	unsigned int GetPacketDataLength();
+
+	int SendPacket( hid_device * handle, HIDREPORT_t &r );
+
+	int ReceivePacket( hid_device * handle, HIDREPORT_t &r );
+
+	int BuildMemWritePacket( HIDREPORT_t &r, unsigned char *buf, unsigned int addr, unsigned int length, unsigned int packet_data_length, unsigned int report_id = 0 );
+	BOOL BuildMemReadPacket( HIDREPORT_t &r, unsigned int addr, unsigned int length, unsigned int report_id = 0 );
+
 	afx_msg void OnBnClickedButtonOpenFile();
+
+	void PrintCurrentTime();
 
 	void HexRecReadFromFile( unsigned char *buf, CStdioFile &mFile, HEXRECORD_t &hr, unsigned int &cur_addr );
 
 	void HexRecPrint( HEXRECORD_t &hr );
 
 	CButton m_ctrlDebugMode;
-	afx_msg void OnBnClickedCheck2();
+	afx_msg void OnBnClickedCheckConsoleEnable();
 	CProgressCtrl m_ctrlProgress;
 	CHgzComboBox m_ctrlPacketDataLength;
 	afx_msg void OnBnClickedButtonSaveAs();
@@ -152,11 +171,30 @@ public:
 	void HexRec(HEXRECORD_t & hr, HEXRECTYPE_t rectype, unsigned char relen, unsigned int addr, unsigned char *buf);
 	void HexRecSaveToFile( HEXRECORD_t &hr, CStdioFile &mFile );
 
-	afx_msg void OnBnClickedButtonPrint();
 	afx_msg void OnBnClickedButtonErase();
 	afx_msg void OnBnClickedButtonVerify();
 	afx_msg void OnBnClickedButtonEncrypt();
+
+	afx_msg void ExecuteMemCmd( unsigned char MemCmd );
+
 	CHgzListCtrl m_ctrlListBuffer;
+
+	int MemRead( hid_device * handle, HIDREPORT_t &r, unsigned int start_addr, unsigned int length );
+
+protected:
+	afx_msg LRESULT OnLvmItemChanged(WPARAM wParam, LPARAM lParam);
+	unsigned int GetDataLength();
+	int CompareMemData( HIDREPORT_t & r, unsigned char *wbuf );
+	BOOL BuildMemCmdPacket( HIDREPORT_t &r, unsigned char MemCmd, unsigned int report_id=0 );
+	void UpdateBufferDisplay( unsigned int addr, unsigned int length );
+public:
+	afx_msg void OnBnClickedButtonBlankCheck();
+	afx_msg void OnBnClickedButtonEnterProgramMode();
+	afx_msg void OnBnClickedButtonExitProgramMode();
+	afx_msg void OnBnClickedButtonTestBlankCheck();
+	afx_msg void OnBnClickedButtonTestDec();
+	afx_msg void OnBnClickedButtonTestWR();
+	afx_msg void OnBnClickedButtonChipReset();
 };
 
 

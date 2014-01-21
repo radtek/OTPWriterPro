@@ -190,14 +190,18 @@ BOOL CHgzListCtrl::BeginEdit(void)
 }
 
 
+
 void CHgzListCtrl::EndEdit(BOOL bValidate)
 {
+	if (m_edit.GetSafeHwnd() == NULL) return;
+
 	// 编辑结果是有效的，重设被编辑表项的文字
 	if( bValidate )
 	{
 		CString txtItem;
 		m_edit.GetWindowText( txtItem );
 		SetItemText(m_nItem, m_nSubItem, txtItem);
+		GetParent()->SendMessage(WM_LVM_ITEMCHANGED, m_nItem, m_nSubItem);
 	}
 
 	// 销毁编辑窗口

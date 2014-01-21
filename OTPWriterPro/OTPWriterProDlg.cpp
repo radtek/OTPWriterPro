@@ -17,6 +17,7 @@
 #endif
 
 
+	
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
 class CAboutDlg : public CDialogEx
@@ -83,14 +84,23 @@ BEGIN_MESSAGE_MAP(COTPWriterProDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BUTTON1, &COTPWriterProDlg::OnBnClickedButton1)
 	ON_BN_CLICKED(IDC_BUTTON2, &COTPWriterProDlg::OnBnClickedButton2)
-	ON_BN_CLICKED(IDC_BUTTON7, &COTPWriterProDlg::OnBnClickedButton7)
+	ON_BN_CLICKED(IDC_BUTTON7, &COTPWriterProDlg::OnBnClickedButtonRead)
 	ON_WM_TIMER()
 	ON_BN_CLICKED(IDC_BUTTON6, &COTPWriterProDlg::OnBnClickedButtonWrite)
 	ON_BN_CLICKED(IDC_BUTTON4, &COTPWriterProDlg::OnBnClickedButtonOpenFile)
-	ON_BN_CLICKED(IDC_CHECK2, &COTPWriterProDlg::OnBnClickedCheck2)
+	ON_BN_CLICKED(IDC_CHECK2, &COTPWriterProDlg::OnBnClickedCheckConsoleEnable)
 	ON_BN_CLICKED(IDC_BUTTON5, &COTPWriterProDlg::OnBnClickedButtonSaveAs)
 	ON_BN_CLICKED(IDC_BUTTON9, &COTPWriterProDlg::OnBnClickedButtonVerify)
 	ON_BN_CLICKED(IDC_BUTTON10, &COTPWriterProDlg::OnBnClickedButtonEncrypt)
+	ON_BN_CLICKED(IDC_BUTTON8, &COTPWriterProDlg::OnBnClickedButtonErase)
+	ON_MESSAGE(WM_LVM_ITEMCHANGED, &COTPWriterProDlg::OnLvmItemChanged)
+	ON_BN_CLICKED(IDC_BUTTON11, &COTPWriterProDlg::OnBnClickedButtonBlankCheck)
+	ON_BN_CLICKED(IDC_BUTTON16, &COTPWriterProDlg::OnBnClickedButtonEnterProgramMode)
+	ON_BN_CLICKED(IDC_BUTTON17, &COTPWriterProDlg::OnBnClickedButtonExitProgramMode)
+	ON_BN_CLICKED(IDC_BUTTON12, &COTPWriterProDlg::OnBnClickedButtonTestBlankCheck)
+	ON_BN_CLICKED(IDC_BUTTON13, &COTPWriterProDlg::OnBnClickedButtonTestDec)
+	ON_BN_CLICKED(IDC_BUTTON14, &COTPWriterProDlg::OnBnClickedButtonTestWR)
+	ON_BN_CLICKED(IDC_BUTTON15, &COTPWriterProDlg::OnBnClickedButtonChipReset)
 END_MESSAGE_MAP()
 
 
@@ -134,12 +144,12 @@ BOOL COTPWriterProDlg::OnInitDialog()
 	m_ctrlDataLength.SetWindowText(_T("16384"));
 	m_ctrlPacketDataLength.SetWindowText(_T("16"));
 
-	memset(wbuf, 0, sizeof(wbuf));
-	wbuf_num = 0;
-	wbuf_data_length = 0;
-	memset(rbuf, 0, sizeof(rbuf));
+	memset(m_buf, 0, sizeof(m_buf));
+	m_buf_num = 0;
+	m_buf_data_length = 0;
+	/*memset(rbuf, 0, sizeof(rbuf));
 	rbuf_num = 0;
-	rbuf_data_length = 0;
+	rbuf_data_length = 0;*/
 	process_state = process_state_idle;
 
 	m_ctrlProgress.SetRange(0, 100);
@@ -151,11 +161,11 @@ BOOL COTPWriterProDlg::OnInitDialog()
 	
 	// set columns
 	CString s;
-	m_ctrlListBuffer.InsertColumn(0, _T(""), 0, 86);
+	m_ctrlListBuffer.InsertColumn(0, _T(""), 0, 76);
 	for (int i = 0; i < 16; i++)
 	{
-		s.Format(_T("%d"), i);
-		m_ctrlListBuffer.InsertColumn(i+1, s, 0, 26);
+		s.Format(_T("%X"), i);
+		m_ctrlListBuffer.InsertColumn(i+1, s, 0, 28);
 	}
 	// lock column width
 	m_ctrlListBuffer.GetHeaderCtrl()->EnableWindow(FALSE);
@@ -483,51 +493,6 @@ void COTPWriterProDlg::OnBnClickedButton2()
 	SetupDiDestroyDeviceInfoList( hDevInfo );
 }
 
-
-void COTPWriterProDlg::OnBnClickedButton7()
-{
-	HIDREPORT_t r;
-
-	r.report_id = 0;
-	r.packet.m_pkt.MemPkt.pl = 11;
-	r.packet.m_pkt.MemPkt.pid = HS_PID_MEM;
-	r.packet.m_pkt.MemPkt.cmd = HS_MEM_READ;
-
-	CString s;
-	m_ctrlMemAddrBegin.GetWindowText(s);
-	r.packet.m_pkt.MemPkt.address.whole = s.GetLength() ? stoul((tstring)s.GetString(), 0, 16) : 0;
-	hgzRevertByteOrder(r.packet.m_pkt.MemPkt.address.bytearr, 4);
-
-	m_ctrlDataLength.GetWindowText(s);
-	r.packet.m_pkt.MemPkt.data_length.whole = s.GetLength() ? stoul((tstring)s.GetString()) : 0;
-	hgzRevertByteOrder(r.packet.m_pkt.MemPkt.data_length.bytearr, 4);
-	
-	r.packet.print();
-
-
-	// Open the device using the VID, PID, and optionally the Serial number.
-	hid_device *handle = handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
-	if (!handle) {
-		printf("unable to open device\n");
-		return;
-	}
-	
-	// send HS_MEM_READ packet.
-	int res = hid_write(handle, (unsigned char *)&r, sizeof(r));
-	if (res < 0) {
-		printf("Unable to send HS_MEM_READ command.\n");
-		printf("Error: %ls\n", hid_error(handle));
-	}
-	
-	wbuf_num = 0;
-	SetTimer(2, 1, NULL);
-
-
-
-	hid_close(handle); /* Free handle objects. */
-	hid_exit(); /* Free static HIDAPI objects. */
-}
-
 hid_device * COTPWriterProDlg::Hid_OpenTopLevelCollection( unsigned short vendor_id, unsigned short product_id )
 {
 	// use HIDAPI
@@ -610,7 +575,7 @@ void COTPWriterProDlg::OnTimer(UINT_PTR nIDEvent)
 		}
 		break;
 	
-	case 2:
+	/*case 2:
 		{
 			HIDREPORT_t r = {0};
 			hid_device *handle = handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
@@ -637,10 +602,10 @@ void COTPWriterProDlg::OnTimer(UINT_PTR nIDEvent)
 			
 			
 			
-			hid_close(handle); /* Free handle objects. */
-			hid_exit(); /* Free static HIDAPI objects. */
+			hid_close(handle); / * Free handle objects. * /
+			hid_exit(); / * Free static HIDAPI objects. * /
 		}
-		break;
+		break;*/
 	
 	default:
 		break;
@@ -649,129 +614,12 @@ void COTPWriterProDlg::OnTimer(UINT_PTR nIDEvent)
 	CDialogEx::OnTimer(nIDEvent);
 }
 
-
-void COTPWriterProDlg::OnBnClickedButtonWrite()
-{
-	if (wbuf_data_length == 0) {
-		MessageBox(_T("No data to write."));
-		return;
-	}
-	
-	HIDREPORT_t r;
-
-	r.report_id = 0;
-	r.packet.m_pkt.MemPkt.pl = 11;
-	r.packet.m_pkt.MemPkt.pid = HS_PID_MEM;
-	r.packet.m_pkt.MemPkt.cmd = HS_MEM_WRITE;
-
-	CString s;
-	m_ctrlMemAddrBegin.GetWindowText(s);
-	unsigned int addr = s.GetLength() ? stoul((tstring)s.GetString(), 0, 16) : 0;
-	//hgzRevertByteOrder((unsigned char *)&addr, 4);
-	//r.packet.m_pkt.MemPkt.address.whole = s.GetLength() ? stoul((tstring)s.GetString(), 0, 16) : 0;
-	//hgzRevertByteOrder(r.packet.m_pkt.MemPkt.address.bytearr, 4);
-
-	m_ctrlDataLength.GetWindowText(s);
-	unsigned int length = s.GetLength() ? stoul((tstring)s.GetString(), 0, 10) : 0;
-	if (length > wbuf_data_length) length = wbuf_data_length;
-	//hgzRevertByteOrder((unsigned char *)&length, 4);
-	//r.packet.m_pkt.MemPkt.data_length.whole = s.GetLength() ? stoul((tstring)s.GetString()) : 0;
-	//hgzRevertByteOrder(r.packet.m_pkt.MemPkt.data_length.bytearr, 4);
-
-
-#if TEST_ON == 0
-	// Open the device using the VID, PID, and optionally the Serial number.
-	hid_device *handle = handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
-	if (!handle) {
-		printf("unable to open device\n");
-		return;
-	}
-#endif
-
-	// Start Write
-	if (process_state == process_state_idle) {
-		process_state = process_state_write;
-
-		unsigned int packet_data_length = sizeof(r.packet.m_pkt.MemPkt.data);
-		if (m_ctrlPacketDataLength.GetWindowTextLength()) {
-			m_ctrlPacketDataLength.GetWindowText(s);
-			unsigned int x = stoul((tstring)s.GetString());
-			if (x > 0 && x < packet_data_length) packet_data_length = x;
-		}
-		
-		wbuf_num = 0;
-		while (wbuf_num != length) {
-			// fill data in the packet.
-			r.report_id = 0;
-			r.packet.m_pkt.MemPkt.pl = 11;
-			r.packet.m_pkt.MemPkt.pid = HS_PID_MEM;
-			r.packet.m_pkt.MemPkt.cmd = HS_MEM_WRITE;
-			r.packet.m_pkt.MemPkt.address.whole = addr + wbuf_num;
-			r.packet.m_pkt.MemPkt.data_length.whole = packet_data_length <= (length - wbuf_num) ? packet_data_length : (length - wbuf_num);
-			memcpy(r.packet.m_pkt.MemPkt.data, &wbuf[wbuf_num], r.packet.m_pkt.MemPkt.data_length.whole);
-			r.packet.m_pkt.MemPkt.pl = 11 + r.packet.m_pkt.MemPkt.data_length.whole;
-			wbuf_num += r.packet.m_pkt.MemPkt.data_length.whole;
-			
-			r.packet.print();
-
-			hgzRevertByteOrder(r.packet.m_pkt.MemPkt.address.bytearr, 4);
-			hgzRevertByteOrder(r.packet.m_pkt.MemPkt.data_length.bytearr, 4);
-			
-
-#if TEST_ON == 0
-			// send HS_MEM_WRITE packet.
-			int res = hid_write(handle, (unsigned char *)&r, sizeof(r));
-			if (res < 0) {
-				printf("Unable to send HS_MEM_READ command.\n");
-				printf("Error: %ls\n", hid_error(handle));
-			}
-
-			////////////////
-			// Set the hid_read() function to be non-blocking.
-			hid_set_nonblocking(handle, 1);
-			// detect if device is ready for receiving another packet of data
-			// Read requested state. hid_read() has been set to be
-			// non-blocking by the call to hid_set_nonblocking() above.
-			// This loop demonstrates the non-blocking nature of hid_read().
-			r.report_id = 0;
-			res = 0;
-			while (res == 0) {
-				res = hid_read(handle, (unsigned char *)&r, sizeof(r));
-				if (res == 0)
-					printf("waiting...\n");
-				if (res < 0)
-					printf("Unable to read()\n");
-				Sleep(500);
-			}
-			if (r.packet.m_pkt.MemPkt.pid == HS_PID_MEM 
-				&& r.packet.m_pkt.MemPkt.cmd == HS_MEM_WRITE
-				&& r.packet.m_pkt.MemPkt.data_length.whole == 0)
-			{
-				process_state = process_state_idle;
-			}
-			else {
-				tcout << endl << _T("Write error!") << endl;
-				break;
-			}
-#else
-			process_state = process_state_idle;
-#endif
-		
-			m_ctrlProgress.SetPos(wbuf_num*100/length);
-		}
-	}
-
-
-#if TEST_ON == 0
-	hid_close(handle); /* Free handle objects. */
-	hid_exit(); /* Free static HIDAPI objects. */
-#endif
-}
-
-
 void COTPWriterProDlg::OnBnClickedButtonOpenFile()
 {
 	m_ctrlProgress.SetPos(0);
+	m_ctrlListBuffer.EndEdit(TRUE);
+
+	
 
 	CFileDialog dlg(TRUE);
 	if (dlg.DoModal() != IDOK)
@@ -784,14 +632,13 @@ void COTPWriterProDlg::OnBnClickedButtonOpenFile()
 	CStdioFile mFile;
 	CFileException mExcept;
 	
-	wbuf_data_length = 0;
+	m_buf_data_length = 0;
 	HEXRECORD_t hr; 
 
+	PrintCurrentTime();
+
 	CString s;
-	CTime t;
-	s.Format(_T("%s: "), t.Format(_T("::")));
-	EditCtrlOutput(s);
-	s.Format(_T("%s : Open file: %s ...   0%%"), t.Format(_T("::")), PathName);
+	s.Format(_T("Open file: %s ...   0%%"), PathName);
 	EditCtrlOutput(s);
 
 	if (FileExt.CompareNoCase(_T("HEX")) == 0) {
@@ -801,7 +648,7 @@ void COTPWriterProDlg::OnBnClickedButtonOpenFile()
 		unsigned int curpos = 0;
 		while (mFile.GetPosition() != mFile.GetLength()) 
 		{
-			HexRecReadFromFile(wbuf, mFile, hr, addr);
+			HexRecReadFromFile(m_buf, mFile, hr, addr);
 			
 			curpos = mFile.GetPosition();
 			int percent = 100 * curpos / filelen;
@@ -809,20 +656,27 @@ void COTPWriterProDlg::OnBnClickedButtonOpenFile()
 			s.Format(_T("%3d%%"), percent);
 			EditCtrlOutput(s, -4);
 		}
-		wbuf_data_length = addr;
+		m_buf_data_length = addr;
 	}
 	else if (FileExt.CompareNoCase(_T("BIN")) == 0) {
 		mFile.Open(PathName, CFile::modeRead | CFile::typeBinary, &mExcept);
-		wbuf_data_length = mFile.Read(wbuf, mFile.GetLength());
+		m_buf_data_length = mFile.Read(m_buf, mFile.GetLength());
 	}
 
 	m_ctrlProgress.SetPos(100);
 	EditCtrlOutput(s = _T("100%\r\n"), -4);
 	mFile.Close();
+
+	for (int i = 0; i < m_buf_data_length ; i++)
+	{
+		CString s;
+		s.Format(_T("%02X"), m_buf[i]);
+		m_ctrlListBuffer.SetItemText(i/16, i%16 + 1, s);
+	}
 }
 
 
-void COTPWriterProDlg::OnBnClickedCheck2()
+void COTPWriterProDlg::OnBnClickedCheckConsoleEnable()
 {
 	if (m_ctrlDebugMode.GetCheck()) hgzOpenConsole();
 	else hgzCloseConsole();
@@ -832,8 +686,9 @@ void COTPWriterProDlg::OnBnClickedCheck2()
 void COTPWriterProDlg::OnBnClickedButtonSaveAs()
 {
 	m_ctrlProgress.SetPos(0);
+	m_ctrlListBuffer.EndEdit(TRUE);
 	
-	if (wbuf_data_length == 0) {
+	if (m_buf_data_length == 0) {
 		MessageBox(_T("No data to save."));
 		return;
 	}
@@ -848,6 +703,8 @@ void COTPWriterProDlg::OnBnClickedButtonSaveAs()
 
 	CStdioFile mFile;
 	CFileException mExcept;
+
+	PrintCurrentTime();
 
 	CString s;
 	s.Format(_T("Save file: %s ...   0%%"), PathName);
@@ -870,25 +727,25 @@ void COTPWriterProDlg::OnBnClickedButtonSaveAs()
 		for (unsigned int addr = 0; ; addr += 16)
 		{
 
-			if (addr >= wbuf_data_length) {
+			if (addr >= m_buf_data_length) {
 				HexRec(hr, HEX_REC_EOF, 0, 0, NULL);
 				HexRecSaveToFile(hr, mFile);
 				break;
 			}
 			else if (addr && (addr % 0x10000 == 0)) {
-				HexRec(hr, HEX_REC_ELA,  2, addr, wbuf);
+				HexRec(hr, HEX_REC_ELA,  2, addr, m_buf);
 				HexRecSaveToFile(hr, mFile);
 				
-				HexRec(hr, HEX_REC_DAT, 16 < (wbuf_data_length-addr) ? 16 : (wbuf_data_length-addr), addr, wbuf);
+				HexRec(hr, HEX_REC_DAT, 16 < (m_buf_data_length-addr) ? 16 : (m_buf_data_length-addr), addr, m_buf);
 				HexRecSaveToFile(hr, mFile);
 			}
 			else {
-				HexRec(hr, HEX_REC_DAT, 16 < (wbuf_data_length-addr) ? 16 : (wbuf_data_length-addr), addr, wbuf);
+				HexRec(hr, HEX_REC_DAT, 16 < (m_buf_data_length-addr) ? 16 : (m_buf_data_length-addr), addr, m_buf);
 				HexRecSaveToFile(hr, mFile);
 			}
 			
 			// progress
-			int percent = 100*addr / wbuf_data_length;
+			int percent = 100*addr / m_buf_data_length;
 			m_ctrlProgress.SetPos(percent);
 			s.Format(_T("%3d%%"), percent);
 			EditCtrlOutput(s, -4);
@@ -897,7 +754,7 @@ void COTPWriterProDlg::OnBnClickedButtonSaveAs()
 	else if (FileExt.CompareNoCase(_T("BIN")) == 0) {
 		mFile.Open(PathName, CFile::modeCreate | CFile::modeWrite | CFile::typeBinary, &mExcept);
 		m_ctrlSaveAppend.GetCheck() ? mFile.SeekToEnd() : mFile.SeekToBegin();
-		mFile.Write(wbuf, wbuf_data_length);
+		mFile.Write(m_buf, m_buf_data_length);
 	}
 	else {
 		MessageBox(_T("Only Hex/Bin file suported."));
@@ -918,7 +775,7 @@ void COTPWriterProDlg::HexRec(HEXRECORD_t & hr, HEXRECTYPE_t rectype, unsigned c
 		hr.addrl = (unsigned char)addr;
 		hr.rectype = (unsigned char)HEX_REC_DAT;
 		for (unsigned int i = 0; i < hr.reclen; i++)
-			hr.data[i] = wbuf[addr++];
+			hr.data[i] = buf[addr++];
 		hr.checksum();
 		break;
 	case HEX_REC_EOF: // :00000001FF
@@ -1032,26 +889,532 @@ void COTPWriterProDlg::EditCtrlOutput( CString &s, int pos )
 }
 
 
-
-void COTPWriterProDlg::OnBnClickedButtonPrint()
+void COTPWriterProDlg::OnBnClickedButtonWrite()
 {
-	// TODO: 在此添加控件通知处理程序代码
+	if (m_buf_data_length == 0) {
+		MessageBox(_T("No data to write."));
+		return;
+	}
+
+	if (process_state != process_state_idle) return;
+	process_state = process_state_write;
+
+
+#if TEST_ON == 0
+	// Open the device using the VID, PID, and optionally the Serial number.
+	hid_device *handle = handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
+	if (!handle) {
+		printf("unable to open device\n");
+		return;
+	}
+#endif
+
+	// Start Write
+		HIDREPORT_t r;
+		m_buf_num = 0;
+		unsigned int start_addr = GetStartAddress();
+		unsigned int length = GetDataLength();
+		unsigned int packet_data_length = GetPacketDataLength();
+		while (m_buf_num != length) 
+		{
+			// build the MemWrite packet.
+			m_buf_num += BuildMemWritePacket(r, m_buf, start_addr+m_buf_num, length-m_buf_num, packet_data_length);
+
+#if TEST_ON == 0
+			int res = 0;
+			res = SendPacket(handle, r);
+			if (res < 0) break;
+			res = ReceivePacket(handle, r);
+			if (res < 0) break;
+#endif
+			m_ctrlProgress.SetPos(m_buf_num*100/length);
+		}
+
+#if TEST_ON == 0
+	hid_close(handle); /* Free handle objects. */
+	hid_exit(); /* Free static HIDAPI objects. */
+#endif
+
+	process_state = process_state_idle;
 }
 
-
-void COTPWriterProDlg::OnBnClickedButtonErase()
+void COTPWriterProDlg::OnBnClickedButtonRead()
 {
-	// TODO: 在此添加控件通知处理程序代码
-}
+	if (process_state != process_state_idle) return;
+	process_state = process_state_read;
 
+#if TEST_ON == 0
+	// Open the device using the VID, PID, and optionally the Serial number.
+	hid_device *handle = handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
+	if (!handle) {
+		printf("Unable to open device\n");
+		return;
+	}
+#else
+	hid_device *handle = 0;
+#endif
+
+	HIDREPORT_t r;
+	MemRead(handle, r, GetStartAddress(), GetDataLength());
+
+#if TEST_ON == 0
+	hid_close(handle); /* Free handle objects. */
+	hid_exit(); /* Free static HIDAPI objects. */
+#endif
+
+
+	UpdateBufferDisplay(GetStartAddress(), GetDataLength());
+	process_state = process_state_idle;
+}
 
 void COTPWriterProDlg::OnBnClickedButtonVerify()
 {
-	// TODO: 在此添加控件通知处理程序代码
-}
+	// if (isEmpty(buf)) { messagebox(error); return;}
+	if (m_buf_data_length == 0) {
+		MessageBox(_T("There's no data in the buffer to verify."));
+		return;
+	}
 
+	if (process_state != process_state_idle) return;
+	process_state = process_state_verify;
+
+
+	// open HID device
+#if TEST_ON == 0
+	// Open the device using the VID, PID, and optionally the Serial number.
+	hid_device *handle = handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
+	if (!handle) {
+		printf("unable to open device\n");
+		return;
+	}
+#else
+	hid_device *handle = 0;
+#endif
+
+	unsigned int start_addr = GetStartAddress();
+	unsigned int total_length = GetDataLength();
+	total_length = total_length <= m_buf_data_length ? total_length : m_buf_data_length;
+	unsigned int addr = start_addr;
+	unsigned int length = 16;
+	HIDREPORT_t r;
+	int res = 0;
+	// loop
+	for (int i = 0; i < m_buf_data_length; i++, addr += length)
+	{
+		// read N bytes to a temp buffer
+		if (MemRead(handle, r, addr, length) == 0) {
+			_tprintf(_T("Verification error (addr | mem_data | buffer_data): %08X | %02X | %02X\r\n"), addr+res, r.packet.m_pkt.MemPkt.data[i], m_buf[i]);
+			goto OnBnClickedButtonVerify_local_exit;
+		}
+		
+		// compare the temp buffer with the buf
+		res = CompareMemData(r, m_buf);
+
+		// if error, message(error), return; else continue.
+		if (res != -1) {
+			_tprintf(_T("Verification error (addr | mem_data | buffer_data): %08X | %02X | %02X\r\n"), addr+res, r.packet.m_pkt.MemPkt.data[i], m_buf[i]);
+			goto OnBnClickedButtonVerify_local_exit;
+		}
+
+	// end loop
+	}
+
+	// ok, output successful.
+	_tprintf(_T("Verification is successful."));
+
+OnBnClickedButtonVerify_local_exit:
+#if TEST_ON == 0
+	hid_close(handle); /* Free handle objects. */
+	hid_exit(); /* Free static HIDAPI objects. */
+#endif
+
+	process_state = process_state_idle;
+}
 
 void COTPWriterProDlg::OnBnClickedButtonEncrypt()
 {
-	// TODO: 在此添加控件通知处理程序代码
+	return ExecuteMemCmd(HS_MEM_WRDIS);
+
+}
+
+void COTPWriterProDlg::OnBnClickedButtonErase()
+{
+	return ExecuteMemCmd(HS_MEM_ERASE_PAGE);
+}
+
+void COTPWriterProDlg::PrintCurrentTime()
+{
+	CString s;
+	CTime t = CTime::GetCurrentTime();
+	s.Format(_T("%04d-%02d-%02d %02d:%02d:%02d:  "), t.GetYear(), t.GetMonth(), t.GetDay(), t.GetHour(), t.GetMinute(), t.GetSecond());
+	EditCtrlOutput(s);
+}
+
+int COTPWriterProDlg::BuildMemWritePacket( HIDREPORT_t &r, unsigned char *buf, unsigned int addr, unsigned int length, unsigned int packet_data_length, unsigned int report_id /*= 0 */ )
+{
+	int datalen = length <= packet_data_length ? length : packet_data_length;
+	
+	r.report_id = report_id;
+	r.packet.m_pkt.MemPkt.pl = 11 + datalen;
+	r.packet.m_pkt.MemPkt.pid = HS_PID_MEM;
+	r.packet.m_pkt.MemPkt.cmd = HS_MEM_WRITE;
+	r.packet.m_pkt.MemPkt.address.whole = addr;
+	r.packet.m_pkt.MemPkt.data_length.whole = datalen;
+	memcpy(r.packet.m_pkt.MemPkt.data, buf+addr, datalen);
+
+	r.packet.print();
+
+	hgzRevertByteOrder(r.packet.m_pkt.MemPkt.address.bytearr, 4);
+	hgzRevertByteOrder(r.packet.m_pkt.MemPkt.data_length.bytearr, 4);
+	
+	return datalen;
+}
+
+BOOL COTPWriterProDlg::BuildMemReadPacket( HIDREPORT_t &r, unsigned int addr, unsigned int length, unsigned int report_id /*= 0 */ )
+{
+//	if (length == 0) return FALSE;
+	int datalen = length;
+
+	r.report_id = report_id;
+	r.packet.m_pkt.MemPkt.pl = 11;
+	r.packet.m_pkt.MemPkt.pid = HS_PID_MEM;
+	r.packet.m_pkt.MemPkt.cmd = HS_MEM_READ;
+	r.packet.m_pkt.MemPkt.address.whole = addr;
+	r.packet.m_pkt.MemPkt.data_length.whole = datalen;
+
+	r.packet.print();
+
+	hgzRevertByteOrder(r.packet.m_pkt.MemPkt.address.bytearr, 4);
+	hgzRevertByteOrder(r.packet.m_pkt.MemPkt.data_length.bytearr, 4);
+
+	return TRUE;
+}
+
+BOOL COTPWriterProDlg::BuildMemCmdPacket( HIDREPORT_t &r, unsigned char MemCmd, unsigned int report_id/*=0 */ )
+{
+	r.report_id = report_id;
+	r.packet.m_pkt.CmdPkt.pl = 3;
+	r.packet.m_pkt.CmdPkt.pid = HS_PID_MEM;
+	r.packet.m_pkt.CmdPkt.cmd = MemCmd;
+	
+	switch (MemCmd)
+	{
+	case HS_MEM_ENTER:
+	case HS_MEM_EXIT:
+	case HS_MEM_WREN:
+	case HS_MEM_WRDIS:
+	case HS_MEM_ACCESS_DISABLE:
+	case HS_MEM_READ_DISABLE:
+	case HS_MEM_WRITE_DISABLE:
+	case HS_MEM_BLKCHK:
+	case HS_MEM_RESET:
+	case HS_MEM_TEST_BLKCHK:
+	case HS_MEM_TEST_DEC:
+	case HS_MEM_TEST_WR:
+	case HS_MEM_ERASE_ALL:
+	case HS_MEM_RDFPCR:
+	case HS_MEM_RDSR:
+		break;
+
+	case HS_MEM_ERASE_PAGE:
+		{
+			r.packet.m_pkt.CmdPkt.pl += 8;
+			CString s;
+			m_ctrlErasePageNum.GetWindowText(s);
+			s.Trim();
+			if (s.GetLength() == 0) return FALSE;
+
+			r.packet.m_pkt.MemPkt.address.whole = stoul(s.GetString(), 0, 10);
+			r.packet.m_pkt.MemPkt.data_length.whole = stoul(s.GetString(), 0, 10);
+			
+			r.packet.print();
+
+			hgzRevertByteOrder(r.packet.m_pkt.MemPkt.address.bytearr, 4);
+			hgzRevertByteOrder(r.packet.m_pkt.MemPkt.data_length.bytearr, 4);			
+			
+			return TRUE;
+		}
+	case HS_MEM_WRSR:
+		{
+			r.packet.m_pkt.CmdPkt.pl += 1;
+			r.packet.m_pkt.ValPkt.value = 0x00; // value to set
+
+			return TRUE;
+		}
+
+	default:
+		break;
+	}
+
+	r.packet.print();
+
+	return TRUE;
+}
+
+int COTPWriterProDlg::ReceivePacket( hid_device * handle, HIDREPORT_t &r )
+{
+	HIDREPORT_t r1;
+	r1.report_id = r.report_id;
+	r1.packet.m_pkt.MemPkt.pid = r.packet.m_pkt.MemPkt.pid;
+	r1.packet.m_pkt.MemPkt.cmd = r.packet.m_pkt.MemPkt.cmd;
+
+	// Set the hid_read() function to be non-blocking.
+	hid_set_nonblocking(handle, 1);
+	// detect if device is ready for receiving another packet of data
+	// Read requested state. hid_read() has been set to be
+	// non-blocking by the call to hid_set_nonblocking() above.
+	// This loop demonstrates the non-blocking nature of hid_read().
+	int res = 0;
+	printf("waiting...\n");
+	while (res == 0) {
+		res = hid_read(handle, (unsigned char *)&r, sizeof(r));
+		if (res == 0)
+			printf(".");
+		if (res < 0)
+			printf("Unable to read()\n");
+		Sleep(500);
+	}
+	printf("\n");
+	/*if (r.packet.m_pkt.MemPkt.pid == HS_PID_MEM 
+		&& r.packet.m_pkt.MemPkt.cmd == HS_MEM_WRITE
+		&& r.packet.m_pkt.MemPkt.data_length.whole == 0)*/
+	if (r.packet.m_pkt.MemPkt.pid == r1.packet.m_pkt.MemPkt.pid && 
+		r.packet.m_pkt.MemPkt.cmd == r1.packet.m_pkt.MemPkt.cmd)
+	{
+		res = 1;
+		if (r.packet.m_pkt.MemPkt.pid == HS_PID_MEM &&
+			r.packet.m_pkt.MemPkt.cmd == HS_MEM_READ) 
+		{
+			hgzRevertByteOrder(r.packet.m_pkt.MemPkt.address.bytearr, 4);
+			hgzRevertByteOrder(r.packet.m_pkt.MemPkt.data_length.bytearr, 4);
+		}
+	}
+	else {
+		tcout << endl << _T("Write error!") << endl;
+		res = -1;
+	}	
+	
+	return res;
+}
+
+int COTPWriterProDlg::SendPacket( hid_device * handle, HIDREPORT_t &r )
+{
+	// Set the hid_write() function to be blocking.
+	hid_set_nonblocking(handle, 0);
+	// send HS_MEM_WRITE packet.
+	int res = hid_write(handle, (unsigned char *)&r, sizeof(r));
+	
+	CString s;
+	switch (r.packet.m_pkt.MemPkt.cmd)
+	{
+	case HS_MEM_WRITE:
+		s = "HS_MEM_WRITE";
+		break;
+
+	case HS_MEM_READ:
+		s = "HS_MEM_READ";
+		break;
+
+	default:
+		break;
+	}
+
+	if (res < 0) {
+		printf("Unable to send command: %s\n", s);
+		printf("Error: %ls\n", hid_error(handle));
+		return -1;
+	}
+
+	return 1;
+}
+
+
+
+afx_msg LRESULT COTPWriterProDlg::OnLvmItemChanged(WPARAM wParam, LPARAM lParam)
+{
+	TRACE(_T("Received WM_LVM_ENDEDIT message: %d, %d\n"), wParam, lParam);
+
+	CString s;
+	s = m_ctrlListBuffer.GetItemText(wParam, lParam);
+	s.Trim();
+	if (s.GetLength() == 0) {
+		m_buf[wParam*16 + lParam-1] = 0;
+	}
+	else {
+		m_buf[wParam*16 + lParam-1] = stoul(s.GetString(), 0, 16);
+		s.Format(_T("%02X"), m_buf[wParam*16 + lParam-1]);
+		m_ctrlListBuffer.SetItemText(wParam, lParam, s);
+	}
+
+	return 0;
+}
+
+int COTPWriterProDlg::MemRead( hid_device * handle, HIDREPORT_t &r, unsigned int start_addr, unsigned int length )
+{
+	BuildMemReadPacket(r, start_addr, length);
+
+#if TEST_ON == 0
+	// Start Write
+		int res = 0;
+		res = SendPacket(handle, r);
+		if (res < 0) {
+			process_state = process_state_idle;
+			m_buf_num = 0;
+			return 0;
+		}
+
+		long long received_num = 0;
+		while (process_state == process_state_read) 
+		{
+			res = ReceivePacket(handle, r);
+			if (res < 0) break;
+			if (r.packet.m_pkt.MemPkt.data_length.whole == 0) {
+				m_ctrlProgress.SetPos(100);
+				break;
+			}
+			else {
+				received_num += r.packet.m_pkt.MemPkt.data_length.whole;
+				memcpy(m_buf+r.packet.m_pkt.MemPkt.address.whole, r.packet.m_pkt.MemPkt.data, r.packet.m_pkt.MemPkt.data_length.whole);
+			}
+			m_ctrlProgress.SetPos(received_num*100/length);
+		}
+		if (received_num != 0) m_buf_num = received_num;
+#endif
+
+		return 1;
+}
+
+unsigned int COTPWriterProDlg::GetStartAddress()
+{
+	CString s;
+
+	m_ctrlMemAddrBegin.GetWindowText(s);
+	unsigned int start_addr = s.GetLength() ? stoul((tstring)s.GetString(), 0, 16) : 0;
+	
+	return start_addr;
+}
+
+unsigned int COTPWriterProDlg::GetDataLength()
+{
+	CString s;
+
+	m_ctrlDataLength.GetWindowText(s);
+	unsigned int length = s.GetLength() ? stoul((tstring)s.GetString()) : 0;
+	
+	return length;
+}
+
+unsigned int COTPWriterProDlg::GetPacketDataLength()
+{
+	CString s;
+	HIDREPORT_t r;
+	unsigned int packet_data_length = sizeof(r.packet.m_pkt.MemPkt.data);
+	if (m_ctrlPacketDataLength.GetWindowTextLength()) {
+		m_ctrlPacketDataLength.GetWindowText(s);
+		unsigned int x = stoul((tstring)s.GetString());
+		if (x > 0 && x < packet_data_length) packet_data_length = x;
+	}
+
+	return packet_data_length;
+}
+
+int COTPWriterProDlg::CompareMemData( HIDREPORT_t & r, unsigned char *buf )
+{
+	for (int i = 0; i < r.packet.m_pkt.MemPkt.data_length.whole ; i++)
+	{
+		if (r.packet.m_pkt.MemPkt.data[i] != buf[r.packet.m_pkt.MemPkt.address.whole + i]) {
+			return i; // index of the first error byte.
+		}
+	}
+
+	return -1; // successful
+}
+
+afx_msg void COTPWriterProDlg::ExecuteMemCmd( unsigned char MemCmd )
+{
+	if (process_state != process_state_idle) return;
+	process_state = (enum _FLAG_t)MemCmd;
+
+	HIDREPORT_t r;
+	
+	if (BuildMemCmdPacket(r, MemCmd) == FALSE) {
+		process_state = process_state_idle;
+		return;
+	}
+
+#if TEST_ON == 0
+	// Open the device using the VID, PID, and optionally the Serial number.
+	hid_device *handle = handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
+	if (!handle) {
+		printf("Unable to open device\n");
+		return;
+	}
+
+	int res = 0;
+	res = SendPacket(handle, r);
+	if (res < 0) {
+
+	}
+	res = ReceivePacket(handle, r);
+	if (res < 0) {
+
+	}
+
+	hid_close(handle); /* Free handle objects. */
+	hid_exit(); /* Free static HIDAPI objects. */
+#endif
+
+	process_state = process_state_idle;
+}
+
+void COTPWriterProDlg::UpdateBufferDisplay( unsigned int addr, unsigned int length )
+{
+	CString s;
+	for (int i = addr; i < addr+length ; i++)
+	{
+		s.Format(_T("%02X"), m_buf[i]);
+		m_ctrlListBuffer.SetItemText(i/16, i%16+1, s);
+	}
+}
+
+
+void COTPWriterProDlg::OnBnClickedButtonBlankCheck()
+{
+	ExecuteMemCmd(HS_MEM_BLKCHK);
+}
+
+
+void COTPWriterProDlg::OnBnClickedButtonEnterProgramMode()
+{
+	ExecuteMemCmd(HS_MEM_ENTER);
+}
+
+
+void COTPWriterProDlg::OnBnClickedButtonExitProgramMode()
+{
+	ExecuteMemCmd(HS_MEM_EXIT);
+}
+
+
+void COTPWriterProDlg::OnBnClickedButtonTestBlankCheck()
+{
+	ExecuteMemCmd(HS_MEM_TEST_BLKCHK);
+}
+
+
+void COTPWriterProDlg::OnBnClickedButtonTestDec()
+{
+	ExecuteMemCmd(HS_MEM_TEST_DEC);
+}
+
+
+void COTPWriterProDlg::OnBnClickedButtonTestWR()
+{
+	ExecuteMemCmd(HS_MEM_TEST_WR);
+}
+
+
+void COTPWriterProDlg::OnBnClickedButtonChipReset()
+{
+	ExecuteMemCmd(HS_MEM_RESET);
 }

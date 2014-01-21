@@ -36,6 +36,25 @@ const unsigned char OTPWriter_ReportDescriptor[] =
 
 }; /* OTPWriter_ReportDescriptor */
 
+/*
+f. 通信协议说明：
+	i. MEM 读写：
+		1) MEM 读写包序列的结束标识：
+			i) 以最后一个包的数据长度域为 0 来标识一个包序列的结束。
+		2) MEM 读：
+			i) 主机发送一个 MEM_READ 指令包
+			ii) 设备回复 MEM_READ 数据包序列
+				a) 最后一个包的数据长度域必须为 0。
+			iii) 当设备无法完成指令时，回复 PID_ERR 包。
+		3) MEM 写：
+			i) 主机发送 MEM_WRITE 指令包序列
+				a) 每收到前一指令的回复包后才可发送下一个指令包；
+				b) 最后一个指令包的数据长度域必须为 0。
+			ii) 设备每收到一个指令包回复一个 MEM_WRITE 状态包。
+			iii) 当设备无法完成指令时，回复 PID_ERR 包。
+
+
+*/
 
 // Packet ID
 #define HS_PID_MEM				0x01	// H2D, D2H: <PL(1), HS_PID_MEM(1), Command(1), Data(0..61)>
@@ -45,7 +64,7 @@ const unsigned char OTPWriter_ReportDescriptor[] =
 
 // MEM relevent packet
 //// Common operations
-#define HS_MEM_ENTRY			0x01	// H2D, D2H: <PL(1), HS_PID_MEM(1), HS_MEM_ENTRY(1)>
+#define HS_MEM_ENTER			0x01	// H2D, D2H: <PL(1), HS_PID_MEM(1), HS_MEM_ENTER(1)>
 #define HS_MEM_EXIT				0x02	// H2D, D2H: <PL(1), HS_PID_MEM(1), HS_MEM_EXIT(1)>
 #define HS_MEM_READ				0x03	// H2D, D2H: <PL(1), HS_PID_MEM(1), HS_MEM_READ(1), Address(4), DataLength(4), Data(0..53)>
 #define HS_MEM_WRITE			0x04	// H2D, D2H: <PL(1), HS_PID_MEM(1), HS_MEM_WRITE(1), Address(4), DataLength(4), Data(0..53)>
@@ -57,13 +76,13 @@ const unsigned char OTPWriter_ReportDescriptor[] =
 #define HS_MEM_ACCESS_DISABLE	0x09	// H2D, D2H: <PL(1), HS_PID_MEM(1), HS_MEM_ACCESS_DISABLE(1)>
 #define HS_MEM_READ_DISABLE		0x0a	// H2D, D2H: <PL(1), HS_PID_MEM(1), HS_MEM_READ_DISABLE(1)>
 #define HS_MEM_WRITE_DISABLE	0x0b	// H2D, D2H: <PL(1), HS_PID_MEM(1), HS_MEM_WRITE_DISABLE(1)> // Note: Different from HS_MEM_WRDIS, which is used to reset MEM write enable latch WEN bit in register FSR.
-
+#define HS_MEM_BLKCHK			0x0c	// H2D, D2H: <PL(1), HS_PID_MEM(1), HS_MEM_BLKCHK(1)>
 //// OTP specific operations
 #define HS_MEM_RESET			0x20	// H2D, D2H: <PL(1), HS_PID_MEM(1), HS_MEM_RESET(1)>
 ////// OTP production test
-#define HS_MEM_BLKCHK			0x30	// H2D, D2H: <PL(1), HS_PID_MEM(1), HS_MEM_BLKCHK(1)>
-#define HS_MEM_TESTDEC			0x31	// H2D, D2H: <PL(1), HS_PID_MEM(1), HS_MEM_TESTDEC(1)>
-#define HS_MEM_WRTEST			0x32	// H2D, D2H: <PL(1), HS_PID_MEM(1), HS_MEM_WRTEST(1)>
+#define HS_MEM_TEST_BLKCHK		0x30	// H2D, D2H: <PL(1), HS_PID_MEM(1), HS_MEM_TEST_BLKCHK(1)>
+#define HS_MEM_TEST_DEC			0x31	// H2D, D2H: <PL(1), HS_PID_MEM(1), HS_MEM_TEST_DEC(1)>
+#define HS_MEM_TEST_WR			0x32	// H2D, D2H: <PL(1), HS_PID_MEM(1), HS_MEM_TEST_WR(1)>
 #define HS_MEM_SPRON			0x33	// H2D, D2H: <PL(1), HS_PID_MEM(1), HS_MEM_SPRON(1)>
 #define HS_MEM_SPROFF			0x34	// H2D, D2H: <PL(1), HS_PID_MEM(1), HS_MEM_SPROFF(1)>
 

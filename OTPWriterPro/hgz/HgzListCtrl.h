@@ -1,6 +1,9 @@
 #pragma once
 #include "atltypes.h"
 
+
+#define WM_LVM_ITEMCHANGED (WM_USER + 1)
+
 // CItemEdit
 
 class CItemEdit : public CEdit
