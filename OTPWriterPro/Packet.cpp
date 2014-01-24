@@ -61,8 +61,8 @@ void CPacket::print(BOOL printOn)
 		cstr.AppendFormat(_T("%02X | "), m_pkt.MemPkt.pl);
 		cstr.AppendFormat(_T("%02X | "), m_pkt.MemPkt.pid);
 		cstr.AppendFormat(_T("%02X | "), m_pkt.MemPkt.cmd);
-		cstr.AppendFormat(_T("%08X | "), m_pkt.MemPkt.address.whole);
-		cstr.AppendFormat(_T("%08X | "), m_pkt.MemPkt.data_length.whole);
+		cstr.AppendFormat(_T("%08X | "), hgzRevertByteOrder32(m_pkt.MemPkt.address));
+		cstr.AppendFormat(_T("%08X | "), hgzRevertByteOrder32(m_pkt.MemPkt.data_length));
 		for (int i = 0; i < m_pkt.MemPkt.pl-11; i++) 
 		{
 			cstr.AppendFormat(_T("%02X"), m_pkt.MemPkt.data[i]);
@@ -70,6 +70,8 @@ void CPacket::print(BOOL printOn)
 		cstr.AppendFormat(_T("\r\n"));
 		
 		tcout << cstr.GetString();
+
+		
 
 		//// 要输出汉字，需如下设置：
 		//tcout.imbue(std::locale("chs")); // Language and Country/Region Strings

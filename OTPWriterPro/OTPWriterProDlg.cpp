@@ -590,13 +590,13 @@ void COTPWriterProDlg::OnTimer(UINT_PTR nIDEvent)
 				printf("Error: %ls\n", hid_error(handle));
 			}
 
-			if (r.packet.m_pkt.MemPkt.data_length.whole == 0) {
+			if (r.packet.m_pkt.MemPkt.data_length == 0) {
 				KillTimer(2);
 				//SaveMemFile();
 			}
 			else {
-				memcpy(&rbuf[rbuf_num], r.packet.m_pkt.MemPkt.data, r.packet.m_pkt.MemPkt.data_length.whole);
-				rbuf_num += r.packet.m_pkt.MemPkt.data_length.whole;
+				memcpy(&rbuf[rbuf_num], r.packet.m_pkt.MemPkt.data, r.packet.m_pkt.MemPkt.data_length);
+				rbuf_num += r.packet.m_pkt.MemPkt.data_length;
 			}
 			
 			
@@ -612,6 +612,12 @@ void COTPWriterProDlg::OnTimer(UINT_PTR nIDEvent)
 	}
 
 	CDialogEx::OnTimer(nIDEvent);
+}
+
+void COTPWriterProDlg::OnBnClickedCheckConsoleEnable()
+{
+	if (m_ctrlDebugMode.GetCheck()) hgzOpenConsole();
+	else hgzCloseConsole();
 }
 
 void COTPWriterProDlg::OnBnClickedButtonOpenFile()
@@ -674,14 +680,6 @@ void COTPWriterProDlg::OnBnClickedButtonOpenFile()
 		m_ctrlListBuffer.SetItemText(i/16, i%16 + 1, s);
 	}
 }
-
-
-void COTPWriterProDlg::OnBnClickedCheckConsoleEnable()
-{
-	if (m_ctrlDebugMode.GetCheck()) hgzOpenConsole();
-	else hgzCloseConsole();
-}
-
 
 void COTPWriterProDlg::OnBnClickedButtonSaveAs()
 {
@@ -766,118 +764,6 @@ void COTPWriterProDlg::OnBnClickedButtonSaveAs()
 	mFile.Close();
 }
 
-void COTPWriterProDlg::HexRec(HEXRECORD_t & hr, HEXRECTYPE_t rectype, unsigned char relen, unsigned int addr, unsigned char *buf)
-{
-	switch (rectype) {
-	case HEX_REC_DAT:
-		hr.reclen = relen;
-		hr.addrh = (unsigned char)(addr>>8);
-		hr.addrl = (unsigned char)addr;
-		hr.rectype = (unsigned char)HEX_REC_DAT;
-		for (unsigned int i = 0; i < hr.reclen; i++)
-			hr.data[i] = buf[addr++];
-		hr.checksum();
-		break;
-	case HEX_REC_EOF: // :00000001FF
-		hr.reclen = 0x00;
-		hr.addrh = 0x00;
-		hr.addrl = 0x00;
-		hr.rectype = 0x01;
-		hr.data[0] = 0xFF;
-		break;
-	case HEX_REC_ESA:
-		hr.reclen = 0x02;
-		hr.addrh = 0x00;
-		hr.addrl = 0x00;
-		hr.rectype = (unsigned char)HEX_REC_ESA;
-		hr.data[0] = (unsigned char)(addr>>12);
-		hr.data[1] = (unsigned char)(addr>>4);
-		hr.checksum();
-		break;
-	case HEX_REC_SSA:
-		break;
-	case HEX_REC_ELA:
-		hr.reclen = 0x02;
-		hr.addrh = 0x00;
-		hr.addrl = 0x00;
-		hr.rectype = (unsigned char)HEX_REC_ELA;
-		hr.data[0] = (unsigned char)(addr>>24);
-		hr.data[1] = (unsigned char)(addr>>16);
-		hr.checksum();
-		break;
-	case HEX_REC_SLA:
-		break;
-	default:
-		break;
-	}
-}
-
-void COTPWriterProDlg::HexRecSaveToFile(HEXRECORD_t &hr, CStdioFile &mFile )
-{
-	CString s;
-	s.Format(_T(":%02X%02X%02X%02X"), hr.reclen, hr.addrh, hr.addrl, hr.rectype);
-	for (unsigned int i = 0; i < hr.reclen; i++)
-		s.AppendFormat(_T("%02X"), hr.data[i]);
-	s.AppendFormat(_T("%02X\n"), hr.data[hr.reclen]);
-	mFile.WriteString(s);
-
-#if 0
-	_tprintf(_T("%s"), s);
-#endif
-}
-
-void COTPWriterProDlg::HexRecPrint( HEXRECORD_t &hr )
-{
-	_tprintf(_T("\nhex record:  %02X | %02X%02X | %02X | "), hr.reclen, hr.addrh, hr.addrl, hr.rectype);
-	for (int i = 0; i < hr.reclen; i++)	_tprintf(_T("%02X"), hr.data[i]);
-	_tprintf(_T(" | %02X"), hr.data[hr.reclen]);
-}
-
-void COTPWriterProDlg::HexRecReadFromFile( unsigned char *buf, CStdioFile &mFile, HEXRECORD_t &hr, unsigned int &cur_addr )
-{
-	CString s;
-	mFile.ReadString(s);
-	for (int i = 1; i < s.GetLength(); i+=2) {
-		((unsigned char *)&hr)[1+i/2] = stoul((tstring)(s.Mid(i, 2).GetString()), 0, 16);
-	}
-	//HexRecPrint(hr);
-
-	unsigned int addr;
-	unsigned int base_addr = cur_addr & 0xffff0000;
-
-	switch ((HEXRECTYPE_t)hr.rectype) {
-	case HEX_REC_DAT: // Data Record
-		addr = base_addr + (hr.addrh<<8) + hr.addrl;
-		//_tprintf(_T(" | %08X"), addr);
-		memset(buf+cur_addr, 0, addr-cur_addr);
-		memcpy(buf+addr, hr.data, hr.reclen);
-		cur_addr = addr + hr.reclen;
-		break;
-	case HEX_REC_EOF: // End of File Record
-		//wbuf_data_length = cur_addr;
-		break;
-	case HEX_REC_ESA: // Extended Segment Address Record
-		base_addr = (hr.data[0]<<12) + (hr.data[1]<<4);
-		memset(buf+cur_addr, 0, base_addr-cur_addr);
-		cur_addr = base_addr;
-		break;
-	case HEX_REC_SSA: // Start Segment Address Record
-		MessageBox(_T("Hex item type: 0x03 (Start Segment Address Record), unprocessed."));
-		break;
-	case HEX_REC_ELA: // Extended Linear Address Record
-		base_addr = (hr.data[0]<<24) + (hr.data[1]<<16);
-		memset(buf+cur_addr, 0, base_addr-cur_addr);
-		cur_addr = base_addr;
-		break;
-	case HEX_REC_SLA: // Start Linear Address Record
-		MessageBox(_T("Hex item type: 0x05 (Start Linear Address Record), unprocessed."));
-		break;
-	default:
-		break;
-	}
-
-	
-}
 
 void COTPWriterProDlg::EditCtrlOutput( CString &s, int pos )
 {
@@ -1058,14 +944,14 @@ int COTPWriterProDlg::BuildMemWritePacket( HIDREPORT_t &r, unsigned char *buf, u
 	r.packet.m_pkt.MemPkt.pl = 11 + datalen;
 	r.packet.m_pkt.MemPkt.pid = HS_PID_MEM;
 	r.packet.m_pkt.MemPkt.cmd = HS_MEM_WRITE;
-	r.packet.m_pkt.MemPkt.address.whole = addr;
-	r.packet.m_pkt.MemPkt.data_length.whole = datalen;
+	r.packet.m_pkt.MemPkt.address = addr;
+	r.packet.m_pkt.MemPkt.data_length = datalen;
 	memcpy(r.packet.m_pkt.MemPkt.data, buf+addr, datalen);
 
-	r.packet.print();
+	hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.MemPkt.address, 4);
+	hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.MemPkt.data_length, 4);
 
-	hgzRevertByteOrder(r.packet.m_pkt.MemPkt.address.bytearr, 4);
-	hgzRevertByteOrder(r.packet.m_pkt.MemPkt.data_length.bytearr, 4);
+	r.packet.print();
 	
 	return datalen;
 }
@@ -1079,13 +965,13 @@ BOOL COTPWriterProDlg::BuildMemReadPacket( HIDREPORT_t &r, unsigned int addr, un
 	r.packet.m_pkt.MemPkt.pl = 11;
 	r.packet.m_pkt.MemPkt.pid = HS_PID_MEM;
 	r.packet.m_pkt.MemPkt.cmd = HS_MEM_READ;
-	r.packet.m_pkt.MemPkt.address.whole = addr;
-	r.packet.m_pkt.MemPkt.data_length.whole = datalen;
+	r.packet.m_pkt.MemPkt.address = addr;
+	r.packet.m_pkt.MemPkt.data_length = datalen;
+
+	hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.MemPkt.address, 4);
+	hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.MemPkt.data_length, 4);
 
 	r.packet.print();
-
-	hgzRevertByteOrder(r.packet.m_pkt.MemPkt.address.bytearr, 4);
-	hgzRevertByteOrder(r.packet.m_pkt.MemPkt.data_length.bytearr, 4);
 
 	return TRUE;
 }
@@ -1124,14 +1010,14 @@ BOOL COTPWriterProDlg::BuildMemCmdPacket( HIDREPORT_t &r, unsigned char MemCmd, 
 			s.Trim();
 			if (s.GetLength() == 0) return FALSE;
 
-			r.packet.m_pkt.MemPkt.address.whole = stoul(s.GetString(), 0, 10);
-			r.packet.m_pkt.MemPkt.data_length.whole = stoul(s.GetString(), 0, 10);
+			r.packet.m_pkt.MemPkt.address = stoul(s.GetString(), 0, 10);
+			r.packet.m_pkt.MemPkt.data_length = stoul(s.GetString(), 0, 10);
 			
+			hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.MemPkt.address, 4);
+			hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.MemPkt.data_length, 4);			
+
 			r.packet.print();
 
-			hgzRevertByteOrder(r.packet.m_pkt.MemPkt.address.bytearr, 4);
-			hgzRevertByteOrder(r.packet.m_pkt.MemPkt.data_length.bytearr, 4);			
-			
 			return TRUE;
 		}
 	case HS_MEM_WRSR:
@@ -1177,7 +1063,7 @@ int COTPWriterProDlg::ReceivePacket( hid_device * handle, HIDREPORT_t &r )
 	printf("\n");
 	/*if (r.packet.m_pkt.MemPkt.pid == HS_PID_MEM 
 		&& r.packet.m_pkt.MemPkt.cmd == HS_MEM_WRITE
-		&& r.packet.m_pkt.MemPkt.data_length.whole == 0)*/
+		&& r.packet.m_pkt.MemPkt.data_length == 0)*/
 	if (r.packet.m_pkt.MemPkt.pid == r1.packet.m_pkt.MemPkt.pid && 
 		r.packet.m_pkt.MemPkt.cmd == r1.packet.m_pkt.MemPkt.cmd)
 	{
@@ -1185,8 +1071,8 @@ int COTPWriterProDlg::ReceivePacket( hid_device * handle, HIDREPORT_t &r )
 		if (r.packet.m_pkt.MemPkt.pid == HS_PID_MEM &&
 			r.packet.m_pkt.MemPkt.cmd == HS_MEM_READ) 
 		{
-			hgzRevertByteOrder(r.packet.m_pkt.MemPkt.address.bytearr, 4);
-			hgzRevertByteOrder(r.packet.m_pkt.MemPkt.data_length.bytearr, 4);
+			//hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.MemPkt.address, 4);
+			//hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.MemPkt.data_length, 4);
 		}
 	}
 	else {
@@ -1268,13 +1154,15 @@ int COTPWriterProDlg::MemRead( hid_device * handle, HIDREPORT_t &r, unsigned int
 		{
 			res = ReceivePacket(handle, r);
 			if (res < 0) break;
-			if (r.packet.m_pkt.MemPkt.data_length.whole == 0) {
+
+			unsigned int datalen = hgzRevertByteOrder32(r.packet.m_pkt.MemPkt.data_length);
+			if (datalen == 0) {
 				m_ctrlProgress.SetPos(100);
 				break;
 			}
 			else {
-				received_num += r.packet.m_pkt.MemPkt.data_length.whole;
-				memcpy(m_buf+r.packet.m_pkt.MemPkt.address.whole, r.packet.m_pkt.MemPkt.data, r.packet.m_pkt.MemPkt.data_length.whole);
+				received_num += datalen;
+				memcpy(hgzRevertByteOrder32(m_buf+r.packet.m_pkt.MemPkt.address), r.packet.m_pkt.MemPkt.data, datalen);
 			}
 			m_ctrlProgress.SetPos(received_num*100/length);
 		}
@@ -1320,9 +1208,9 @@ unsigned int COTPWriterProDlg::GetPacketDataLength()
 
 int COTPWriterProDlg::CompareMemData( HIDREPORT_t & r, unsigned char *buf )
 {
-	for (int i = 0; i < r.packet.m_pkt.MemPkt.data_length.whole ; i++)
+	for (int i = 0; i < r.packet.m_pkt.MemPkt.data_length ; i++)
 	{
-		if (r.packet.m_pkt.MemPkt.data[i] != buf[r.packet.m_pkt.MemPkt.address.whole + i]) {
+		if (r.packet.m_pkt.MemPkt.data[i] != buf[r.packet.m_pkt.MemPkt.address + i]) {
 			return i; // index of the first error byte.
 		}
 	}

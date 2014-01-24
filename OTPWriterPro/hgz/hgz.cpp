@@ -363,7 +363,7 @@ BOOL hgzCloseConsole()
 	return TRUE;
 }
 
-extern void hgzRevertByteOrder( unsigned char *addr, unsigned int length )
+void hgzRevertByteOrder( unsigned char *addr, unsigned int length )
 {
 	unsigned char x;
 
@@ -374,4 +374,16 @@ extern void hgzRevertByteOrder( unsigned char *addr, unsigned int length )
 		*(addr + i) = *(addr + length - 1 - i);
 		*(addr + length - 1 - i) = x;
 	}
+}
+
+unsigned __int32 hgzRevertByteOrder32( unsigned __int32 x )
+{
+	hgzRevertByteOrder((unsigned char *)&x, 4);
+	return x;
+}
+
+unsigned __int16 hgzRevertByteOrder16( unsigned __int16 x )
+{
+	hgzRevertByteOrder((unsigned char *)&x, 2);
+	return x;
 }

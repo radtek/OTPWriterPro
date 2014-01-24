@@ -73,3 +73,5 @@ extern BOOL hgzCloseConsole();
 
 // BigEnding <-> LittleEnding
 extern void hgzRevertByteOrder(unsigned char *addr, unsigned int length);
+extern unsigned __int32 hgzRevertByteOrder32( unsigned __int32 x );
+extern unsigned __int16 hgzRevertByteOrder16( unsigned __int16 x );

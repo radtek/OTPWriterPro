@@ -11,6 +11,7 @@
 #include ".\hgz\HgzListCtrl.h"
 #include "Packet.h"
 #include "hidapi.h"
+#include ".\hgz\HexFile.h"
 
 
 #define TEST_ON 1
@@ -90,41 +91,6 @@ public:
 	} HIDREPORT_t;
 
 
-	typedef enum {
-		HEX_REC_DAT = 0, // Data Record
-		HEX_REC_EOF = 1, // End of File Record
-		HEX_REC_ESA = 2, // Extended Segment Address Record
-		HEX_REC_SSA = 3, // Start Segment Address Record
-		HEX_REC_ELA = 4, // Extended Linear Address Record
-		HEX_REC_SLA = 5  // Start Linear Address Record
-	} HEXRECTYPE_t;
-
-	typedef struct {
-		unsigned char recmark;
-		unsigned char reclen;
-		unsigned char addrh;
-		unsigned char addrl;
-		unsigned char rectype;
-		unsigned char data[256];
-
-		unsigned char checksum() {
-			data[reclen] = reclen + addrh + addrl + rectype;
-			for (unsigned int i = 0; i < reclen; i++){
-				data[reclen] += data[i];
-			}
-			data[reclen] = ~data[reclen] + 1;
-			return data[reclen];
-		};
-	} HEXRECORD_t; 
-
-	/*typedef struct {
-		CString recmark;
-		CString reclen;
-		CString address;
-		CString rectype;
-		CString data;
-	} HEXRECORDSTRING_t;*/
-
 	enum _FLAG_t {
 		process_state_idle = 0,
 		process_state_read = HS_MEM_READ,
@@ -140,8 +106,7 @@ public:
 	long long m_buf_num;
 	long long m_buf_data_length;
 	unsigned char rbuf[0x10000];
-// 	long long rbuf_num;
-// 	long long rbuf_data_length;
+
 
 	afx_msg void OnBnClickedButtonWrite();
 
@@ -158,18 +123,11 @@ public:
 
 	void PrintCurrentTime();
 
-	void HexRecReadFromFile( unsigned char *buf, CStdioFile &mFile, HEXRECORD_t &hr, unsigned int &cur_addr );
-
-	void HexRecPrint( HEXRECORD_t &hr );
-
 	CButton m_ctrlDebugMode;
 	afx_msg void OnBnClickedCheckConsoleEnable();
 	CProgressCtrl m_ctrlProgress;
 	CHgzComboBox m_ctrlPacketDataLength;
 	afx_msg void OnBnClickedButtonSaveAs();
-
-	void HexRec(HEXRECORD_t & hr, HEXRECTYPE_t rectype, unsigned char relen, unsigned int addr, unsigned char *buf);
-	void HexRecSaveToFile( HEXRECORD_t &hr, CStdioFile &mFile );
 
 	afx_msg void OnBnClickedButtonErase();
 	afx_msg void OnBnClickedButtonVerify();

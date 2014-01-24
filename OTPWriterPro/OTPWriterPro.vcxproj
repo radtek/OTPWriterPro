@@ -103,6 +103,7 @@
     <None Include="res\OTPWriterPro.rc2" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="hgz\HexFile.h" />
     <ClInclude Include="hgz\hgz.h" />
     <ClInclude Include="hgz\HgzComboBox.h" />
     <ClInclude Include="hgz\HgzFormatTransformer.h" />
@@ -118,6 +119,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="hgz\HexFile.cpp" />
     <ClCompile Include="hgz\hgz.cpp" />
     <ClCompile Include="hgz\HgzComboBox.cpp" />
     <ClCompile Include="hgz\HgzFormatTransformer.cpp" />

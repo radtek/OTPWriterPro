@@ -25,7 +25,7 @@ public:
 
 public:
 #pragma pack(1) // change local byte alignment
-	typedef struct {
+	/*typedef struct {
 		unsigned char pl;
 		unsigned char pid;
 		unsigned char cmd;
@@ -39,6 +39,23 @@ public:
 		} data_length;
 		//unsigned char address[4];
 		//unsigned char data_length[4];
+		unsigned char data[HS_OTPWRITER_HID_REPORT_SIZE-(1+1+1+4+4)];
+	} HS_RWMEMPACKET_t;*/
+
+	typedef struct {
+		unsigned char pl;
+		unsigned char pid;
+		unsigned char cmd;
+		/*union {
+			unsigned int whole;
+			unsigned char bytearr[4];
+		} address;
+		union {
+			unsigned int whole;
+			unsigned char bytearr[4];
+		} data_length;*/
+		unsigned int address;
+		unsigned int data_length;
 		unsigned char data[HS_OTPWRITER_HID_REPORT_SIZE-(1+1+1+4+4)];
 	} HS_RWMEMPACKET_t;
 
@@ -62,7 +79,8 @@ public:
 	} HS_COMMONPACKET_t;
 
 	HS_COMMONPACKET_t m_pkt;
-#pragma pack()	
+#pragma pack()
+
 public:
 	void print(BOOL printOn = TRUE);
 	//friend ostream& operator << (ostream& os, const CPacket& packet);
