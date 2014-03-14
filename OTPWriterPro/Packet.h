@@ -18,7 +18,7 @@ public:
 	CPacket(void) 
 	{ 
 		//memset(&m_pkt, 0, sizeof(m_pkt)); 
-		m_pkt.MemPkt.pl = 0;
+		m_pkt.memPkt.len = 0;
 
 	};
 	~CPacket(void) {};
@@ -26,59 +26,62 @@ public:
 public:
 #pragma pack(1) // change local byte alignment
 	/*typedef struct {
-		unsigned char pl;
-		unsigned char pid;
-		unsigned char cmd;
+		unsigned char len;
+		unsigned char cmdL1;
+		unsigned char cmdL2;
 		union {
 			unsigned int whole;
 			unsigned char bytearr[4];
-		} address;
+		} addr;
 		union {
 			unsigned int whole;
 			unsigned char bytearr[4];
-		} data_length;
-		//unsigned char address[4];
-		//unsigned char data_length[4];
+		} dataLen;
+		//unsigned char addr[4];
+		//unsigned char dataLen[4];
 		unsigned char data[HS_OTPWRITER_HID_REPORT_SIZE-(1+1+1+4+4)];
-	} HS_RWMEMPACKET_t;*/
+	} HS_RW_MEM_PACKET_t;*/
 
 	typedef struct {
-		unsigned char pl;
-		unsigned char pid;
-		unsigned char cmd;
+		unsigned char len;  // ength of packet
+        unsigned char csb; // Control Status Byte
+		unsigned char cmdL1; // Command Level 1
+		unsigned char cmdL2; // Command Level 2
 		/*union {
 			unsigned int whole;
 			unsigned char bytearr[4];
-		} address;
+		} addr;
 		union {
 			unsigned int whole;
 			unsigned char bytearr[4];
-		} data_length;*/
-		unsigned int address;
-		unsigned int data_length;
-		unsigned char data[HS_OTPWRITER_HID_REPORT_SIZE-(1+1+1+4+4)];
-	} HS_RWMEMPACKET_t;
+		} dataLen;*/
+		unsigned int addr;
+		unsigned int dataLen;
+		unsigned char data[HS_OTPWRITER_HID_REPORT_SIZE-(1+1+1+1+4+4)];
+	} HS_RW_MEM_PACKET_t;
 
 	typedef struct {
-		unsigned char pl;
-		unsigned char pid;
-		unsigned char cmd;
-	} HS_CMDPACKET_t;
+		unsigned char len;
+        unsigned char csb;
+		unsigned char cmdL1;
+		unsigned char cmdL2;
+	} HS_CMD_PACKET_t;
 
 	typedef struct {
-		unsigned char pl;
-		unsigned char pid;
-		unsigned char cmd;
-		unsigned char value;
-	} HS_RWVALUEPACKET_t;
+		unsigned char len;
+        unsigned char csb;
+		unsigned char cmdL1;
+		unsigned char cmdL2;
+		unsigned char val;
+	} HS_RW_VALUE_PACKET_t;
 
 	typedef union {
-		HS_RWMEMPACKET_t MemPkt;
-		HS_CMDPACKET_t CmdPkt;
-		HS_RWVALUEPACKET_t ValPkt;
-	} HS_COMMONPACKET_t;
+		HS_RW_MEM_PACKET_t memPkt;
+		HS_CMD_PACKET_t cmdPkt;
+		HS_RW_VALUE_PACKET_t valPkt;
+	} HS_COMMON_PACKET_t;
 
-	HS_COMMONPACKET_t m_pkt;
+	HS_COMMON_PACKET_t m_pkt;
 #pragma pack()
 
 public:

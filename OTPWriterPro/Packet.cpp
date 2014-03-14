@@ -27,23 +27,23 @@ void CPacket::print(BOOL printOn)
 	int packet_direction = 1; // D2H
 
 
-	switch (m_pkt.MemPkt.pid)
+	switch (m_pkt.memPkt.cmdL1)
 	{
-	case HS_PID_MEM: 
+	case HS__MEM: 
 		packet_direction = 0;
-		packet_info.Format(_T("H2D: HS_PID_MEM"));
+		packet_info.Format(_T("H2D: HS__MEM"));
 		break;
-	case HS_PID_CMD: 
+	case HS__CMD: 
 		packet_direction = 0;
-		packet_info.Format(_T("H2D: HS_PID_CMD"));
+		packet_info.Format(_T("H2D: HS__CMD"));
 		break;
-	case HS_PID_ERR: 
+	case HS__ERR: 
 		packet_direction = 0;
-		packet_info.Format(_T("H2D: HS_PID_ERR"));
+		packet_info.Format(_T("H2D: HS__ERR"));
 		break;
-	case HS_PID_DBG: 
+	case HS__DBG: 
 		packet_direction = 0;
-		packet_info.Format(_T("H2D: HS_PID_DBG"));
+		packet_info.Format(_T("H2D: HS__DBG"));
 		break;
 	}
 
@@ -58,14 +58,15 @@ void CPacket::print(BOOL printOn)
 		cstr.AppendFormat(_T("\r\n"));
 		//cstr.AppendFormat(_T(":  "));
 
-		cstr.AppendFormat(_T("%02X | "), m_pkt.MemPkt.pl);
-		cstr.AppendFormat(_T("%02X | "), m_pkt.MemPkt.pid);
-		cstr.AppendFormat(_T("%02X | "), m_pkt.MemPkt.cmd);
-		cstr.AppendFormat(_T("%08X | "), hgzRevertByteOrder32(m_pkt.MemPkt.address));
-		cstr.AppendFormat(_T("%08X | "), hgzRevertByteOrder32(m_pkt.MemPkt.data_length));
-		for (int i = 0; i < m_pkt.MemPkt.pl-11; i++) 
+		cstr.AppendFormat(_T("%02X | "), m_pkt.memPkt.len);
+        cstr.AppendFormat(_T("%02X | "), m_pkt.memPkt.csb);
+        cstr.AppendFormat(_T("%02X | "), m_pkt.memPkt.cmdL1);
+		cstr.AppendFormat(_T("%02X | "), m_pkt.memPkt.cmdL2);
+		cstr.AppendFormat(_T("%08X | "), hgzRevertByteOrder32(m_pkt.memPkt.addr));
+		cstr.AppendFormat(_T("%08X | "), hgzRevertByteOrder32(m_pkt.memPkt.dataLen));
+		for (int i = 0; i < m_pkt.memPkt.len-12; i++) 
 		{
-			cstr.AppendFormat(_T("%02X"), m_pkt.MemPkt.data[i]);
+			cstr.AppendFormat(_T("%02X"), m_pkt.memPkt.data[i]);
 		}
 		cstr.AppendFormat(_T("\r\n"));
 		
@@ -82,17 +83,17 @@ void CPacket::print(BOOL printOn)
 
 void CPacket::setup( unsigned char pid)
 {
-	m_pkt.MemPkt.pid = pid;
+	m_pkt.memPkt.cmdL1 = pid;
 
 	switch (pid)
 	{
-	case HS_PID_MEM:
+	case HS__MEM:
 		break;
-	case HS_PID_CMD:
+	case HS__CMD:
 		break;
-	case HS_PID_ERR:
+	case HS__ERR:
 		break;
-	case HS_PID_DBG:
+	case HS__DBG:
 		break;
 	}
 }
@@ -103,9 +104,9 @@ void CPacket::setup( unsigned char pid)
 //{
 //	if (packet.m_packet_length)
 //	{
-//		if (packet.m_pkt.common.pid == PID_COMM)
+//		if (packet.m_pkt.common.cmdL1 == PID_COMM)
 //		{
-//			const unsigned char *p = &packet.m_pkt.comm.pid;
+//			const unsigned char *p = &packet.m_pkt.comm.cmdL1;
 //			
 //			// o -- Out
 //			os << 'o' << " "; 
@@ -124,7 +125,7 @@ void CPacket::setup( unsigned char pid)
 //				}
 //			// Packet type: TXPL, TXPLNAK, ACKPL
 //			if (packet.m_log_on.txp.wiack_noack)
-//				os << setw(2) << setfill('0') << hex << (unsigned int)*(&packet.m_pkt.comm.cmd) << " "; 
+//				os << setw(2) << setfill('0') << hex << (unsigned int)*(&packet.m_pkt.comm.cmdL2) << " "; 
 //			// Payload
 //			if (packet.m_log_on.txp.payload)
 //				for (unsigned char i = 0; i < packet.m_packet_length - 5 - p[4]; i++) 
@@ -135,7 +136,7 @@ void CPacket::setup( unsigned char pid)
 //			os << endl;
 //		}
 //		
-//		else if ((packet.m_pkt.common.pid == PID_ACK) && (packet.m_pkt.ack.pt == TYPE_PLD))
+//		else if ((packet.m_pkt.common.cmdL1 == PID_ACK) && (packet.m_pkt.ack.pt == TYPE_PLD))
 //		{
 //			// i -- In
 //			os << 'i' << " "; 
@@ -163,7 +164,7 @@ void CPacket::setup( unsigned char pid)
 //			for (unsigned char i = 0; i < packet.m_packet_length; i++)
 //			{
 //				// 注意：char 和 unsigned char 类型数值的 << 输出，是 ascii 码输出
-//				os << setw(2) << setfill('0') << hex << (unsigned int)*(&packet.m_pkt.common.pid + i) << " ";
+//				os << setw(2) << setfill('0') << hex << (unsigned int)*(&packet.m_pkt.common.cmdL1 + i) << " ";
 //			}
 //			os << endl;
 //		}

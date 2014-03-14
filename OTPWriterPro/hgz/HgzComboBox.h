@@ -16,7 +16,8 @@ protected:
 public:
 	int AddStringWithoutDuplication(LPCTSTR lpszString);
 	int GetWindowHex(unsigned char *pHex); // 取 16 进制数
-	int SetWindowHex(const unsigned char *pHex, int num); 
+ //   int GetWindowHex(unsigned char &Hex);
+    int SetWindowHex(const unsigned char *pHex, int num); 
 	int GetWindowDec(int *pDec); // 取 10 进制数
 	int GetWindowDec(unsigned char *pDec); // 取 10 进制数
 	unsigned char GetWindowDec(void); // 取 10 进制数

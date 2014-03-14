@@ -110,6 +110,7 @@
     <ClInclude Include="hgz\HgzListCtrl.h" />
     <ClInclude Include="hidapi.h" />
     <ClInclude Include="HSOTPWriterProtocol.h" />
+    <ClInclude Include="Option.h" />
     <ClInclude Include="OTPWriterPro.h" />
     <ClInclude Include="OTPWriterProDlg.h" />
     <ClInclude Include="OTPWriterReportDescriptor.h" />
@@ -128,6 +129,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Option.cpp" />
     <ClCompile Include="OTPWriterPro.cpp" />
     <ClCompile Include="OTPWriterProDlg.cpp" />
     <ClCompile Include="Packet.cpp" />

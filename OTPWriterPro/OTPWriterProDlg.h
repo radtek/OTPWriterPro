@@ -14,7 +14,7 @@
 #include ".\hgz\HexFile.h"
 
 
-#define TEST_ON 1
+#define TEST_ON 0
 
 extern "C" {
 	// Declare the C libraries used
@@ -25,6 +25,7 @@ extern "C" {
 // COTPWriterProDlg 对话框
 #include "afxwin.h"
 #include "afxcmn.h"
+#include "d:\users\hgz\documents\appdata\visual studio 2010\projects\otpwriterpro\otpwriterpro\hgz\hgzcombobox.h"
 class COTPWriterProDlg : public CDialogEx
 {
 // 构造
@@ -81,50 +82,56 @@ public:
 	CHgzComboBox m_ctrlDataLength;
 	CButton m_ctrlSaveAppend;
 
-	hid_device * Hid_OpenTopLevelCollection(unsigned short vendor_id, unsigned short product_id);
+	hid_device * Hid_OpenTopLevelCollection(unsigned short vendorID, unsigned short productID);
+
+
+    typedef struct {
+        BOOL bEnableConsoleOutput;
+        BOOL bEnableIncontinuousCell;
+        INT nPacketDataLength;
+    } OPTION_t;
+    OPTION_t m_option;
 
 
 
 	typedef struct {
-		unsigned char report_id;
+		unsigned char reportID;
 		CPacket packet;
 	} HIDREPORT_t;
 
 
 	enum _FLAG_t {
 		process_state_idle = 0,
-		process_state_read = HS_MEM_READ,
-		process_state_write = HS_MEM_WRITE,
-		process_state_verify = HS_MEM_READ,
-		process_state_encrypt = HS_MEM_WRDIS,
-		process_state_erase = HS_MEM_ERASE_PAGE
+		process_state_read = HS__MEM__READ,
+		process_state_write = HS__MEM__WRITE,
+		process_state_verify = HS__MEM__READ,
+		process_state_encrypt = HS__MEM__WRDIS,
+		process_state_erase = HS__MEM__ERASE_PAGE
 	} process_state;
 	
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 
 	unsigned char m_buf[0x10000];
-	long long m_buf_num;
-	long long m_buf_data_length;
-	unsigned char rbuf[0x10000];
-
+    unsigned char m_bufFlag[0x10000];
+	long long m_bufDataLength;
 
 	afx_msg void OnBnClickedButtonWrite();
 
-	unsigned int GetPacketDataLength();
+    int SendAndWaitToReceiveReport( HIDREPORT_t &r, hid_device * handle );
 
-	int SendPacket( hid_device * handle, HIDREPORT_t &r );
+	int SendReport( hid_device * handle, HIDREPORT_t &r );
 
-	int ReceivePacket( hid_device * handle, HIDREPORT_t &r );
+	int ReceiveReport( hid_device * handle, HIDREPORT_t &r );
 
-	int BuildMemWritePacket( HIDREPORT_t &r, unsigned char *buf, unsigned int addr, unsigned int length, unsigned int packet_data_length, unsigned int report_id = 0 );
-	BOOL BuildMemReadPacket( HIDREPORT_t &r, unsigned int addr, unsigned int length, unsigned int report_id = 0 );
+	int BuildMemWriteReport( HIDREPORT_t &r, unsigned char *buf, unsigned int addr, unsigned int length, unsigned int packetDataLength, unsigned int reportID = 0 );
+	BOOL BuildMemReadReport( HIDREPORT_t &r, unsigned int addr, unsigned int length, unsigned int reportID = 0 );
 
 	afx_msg void OnBnClickedButtonOpenFile();
 
+    void SetBuffer(unsigned int addr, long long lenth, unsigned char val, BOOL valid);
+
 	void PrintCurrentTime();
 
-	CButton m_ctrlDebugMode;
-	afx_msg void OnBnClickedCheckConsoleEnable();
 	CProgressCtrl m_ctrlProgress;
 	CHgzComboBox m_ctrlPacketDataLength;
 	afx_msg void OnBnClickedButtonSaveAs();
@@ -133,17 +140,17 @@ public:
 	afx_msg void OnBnClickedButtonVerify();
 	afx_msg void OnBnClickedButtonEncrypt();
 
-	afx_msg void ExecuteMemCmd( unsigned char MemCmd );
+	afx_msg void ExecuteMemCmd( unsigned char memCmd );
 
 	CHgzListCtrl m_ctrlListBuffer;
 
-	int MemRead( hid_device * handle, HIDREPORT_t &r, unsigned int start_addr, unsigned int length );
+	unsigned int MemRead( hid_device * handle, HIDREPORT_t &r, unsigned int startAddr, unsigned int length );
 
 protected:
 	afx_msg LRESULT OnLvmItemChanged(WPARAM wParam, LPARAM lParam);
 	unsigned int GetDataLength();
 	int CompareMemData( HIDREPORT_t & r, unsigned char *wbuf );
-	BOOL BuildMemCmdPacket( HIDREPORT_t &r, unsigned char MemCmd, unsigned int report_id=0 );
+	BOOL BuildMemCmdReport( HIDREPORT_t &r, unsigned char memCmd, unsigned int reportID=0 );
 	void UpdateBufferDisplay( unsigned int addr, unsigned int length );
 public:
 	afx_msg void OnBnClickedButtonBlankCheck();
@@ -153,6 +160,14 @@ public:
 	afx_msg void OnBnClickedButtonTestDec();
 	afx_msg void OnBnClickedButtonTestWR();
 	afx_msg void OnBnClickedButtonChipReset();
+	CHgzComboBox m_cbDataToFill;
+	afx_msg void OnBnClickedButtonInBuffer();
+    afx_msg void OnBnClickedButtonOption();
+    void ClearBuffer(UINT32 addr, UINT64 length);
+    afx_msg void OnBnClickedButtonClearBuffer();
+    UINT8 GetDataToFillBuffer();
+    CButton m_chkFillBufferAll;
+    CButton m_chkClearBufferAll;
 };
 
 

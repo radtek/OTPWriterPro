@@ -3,11 +3,11 @@
 #include "HexFile.h"
 
 
-void HexRec(HEXRECORD_t & hr, HEXRECTYPE_t rectype, unsigned char relen, unsigned int addr, unsigned char *buf)
+void HexRec(HEXRECORD_t & hr, HEXRECTYPE_t rectype, unsigned char reclen, unsigned int addr, unsigned char *buf)
 {
 	switch (rectype) {
 	case HEX_REC_DAT:
-		hr.reclen = relen;
+		hr.reclen = reclen;
 		hr.addrh = (unsigned char)(addr>>8);
 		hr.addrl = (unsigned char)addr;
 		hr.rectype = (unsigned char)HEX_REC_DAT;
@@ -56,24 +56,27 @@ void HexRecPrint( HEXRECORD_t &hr )
 	_tprintf(_T(" | %02X"), hr.data[hr.reclen]);
 }
 
-void HexRecReadFromFile( unsigned char *buf, CStdioFile &mFile, HEXRECORD_t &hr, unsigned int &cur_addr )
+void HexRecReadFromFile( unsigned char *buf, unsigned char *buf_flag, CStdioFile &mFile, HEXRECORD_t &hr, unsigned int &cur_addr )
 {
 	CString s;
 	mFile.ReadString(s);
 	for (int i = 1; i < s.GetLength(); i+=2) {
-		((unsigned char *)&hr)[1+i/2] = stoul((tstring)(s.Mid(i, 2).GetString()), 0, 16);
+		((unsigned char *)&hr)[1+i/2] = (unsigned char)stoul((tstring)(s.Mid(i, 2).GetString()), 0, 16);
 	}
 	//HexRecPrint(hr);
 
 	unsigned int addr;
 	unsigned int base_addr = cur_addr & 0xffff0000;
 
-	switch ((HEXRECTYPE_t)hr.rectype) {
+	switch ((HEXRECTYPE_t)hr.rectype) 
+    {
 	case HEX_REC_DAT: // Data Record
 		addr = base_addr + (hr.addrh<<8) + hr.addrl;
 		//_tprintf(_T(" | %08X"), addr);
 		memset(buf+cur_addr, 0, addr-cur_addr);
+        memset(buf_flag+cur_addr, 0, addr-cur_addr);
 		memcpy(buf+addr, hr.data, hr.reclen);
+        memset(buf_flag+addr, 1, hr.reclen);
 		cur_addr = addr + hr.reclen;
 		break;
 	case HEX_REC_EOF: // End of File Record
@@ -82,6 +85,7 @@ void HexRecReadFromFile( unsigned char *buf, CStdioFile &mFile, HEXRECORD_t &hr,
 	case HEX_REC_ESA: // Extended Segment Address Record
 		base_addr = (hr.data[0]<<12) + (hr.data[1]<<4);
 		memset(buf+cur_addr, 0, base_addr-cur_addr);
+        memset(buf_flag+cur_addr, 0, base_addr-cur_addr);
 		cur_addr = base_addr;
 		break;
 	case HEX_REC_SSA: // Start Segment Address Record
@@ -90,6 +94,7 @@ void HexRecReadFromFile( unsigned char *buf, CStdioFile &mFile, HEXRECORD_t &hr,
 	case HEX_REC_ELA: // Extended Linear Address Record
 		base_addr = (hr.data[0]<<24) + (hr.data[1]<<16);
 		memset(buf+cur_addr, 0, base_addr-cur_addr);
+        memset(buf_flag+cur_addr, 0, base_addr-cur_addr);
 		cur_addr = base_addr;
 		break;
 	case HEX_REC_SLA: // Start Linear Address Record

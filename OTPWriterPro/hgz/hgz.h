@@ -5,6 +5,7 @@
 
 using namespace std;
 
+#define uchar unsigned char
 //////////////////////////////
 #ifdef _UNICODE
 	#define tstring		wstring
@@ -67,7 +68,8 @@ extern int RandRange( int range_min, int range_max );
 
 //
 extern void DeleteSpaceFromString( CString &s );
-extern __int64 BinCString2HexInt( CString &b );
+extern __int64 BinCString2HexInt( const CString &s );
+extern unsigned __int64 BinCString2UInt( const CString &s );
 extern BOOL hgzOpenConsole();
 extern BOOL hgzCloseConsole();
 

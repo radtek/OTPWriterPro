@@ -11,6 +11,8 @@
 //#include <fstream>
 #include ".\hgz\hgz.h"
 #include <string>
+#include "Option.h"
+
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -62,20 +64,21 @@ COTPWriterProDlg::COTPWriterProDlg(CWnd* pParent /*=NULL*/)
 
 void COTPWriterProDlg::DoDataExchange(CDataExchange* pDX)
 {
-	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_BUTTON8, m_ctrlErase);
-	DDX_Control(pDX, IDC_EDIT2, m_ctrlErasePageNum);
-	DDX_Control(pDX, IDC_CHECK1, m_ctrlEraseAll);
-	DDX_Control(pDX, IDC_EDIT1, m_ctrlEdit);
-	DDX_Control(pDX, IDC_COMBO1, m_ctrlChipSel);
-	DDX_Control(pDX, IDC_BUTTON5, m_ctrlCodeSaveAs);
-	DDX_Control(pDX, IDC_COMBO3, m_ctrlMemAddrBegin);
-	DDX_Control(pDX, IDC_COMBO4, m_ctrlDataLength);
-	DDX_Control(pDX, IDC_CHECK2, m_ctrlDebugMode);
-	DDX_Control(pDX, IDC_PROGRESS1, m_ctrlProgress);
-	DDX_Control(pDX, IDC_COMBO5, m_ctrlPacketDataLength);
-	DDX_Control(pDX, IDC_CHECK3, m_ctrlSaveAppend);
-	DDX_Control(pDX, IDC_LIST1, m_ctrlListBuffer);
+    CDialogEx::DoDataExchange(pDX);
+    DDX_Control(pDX, IDC_BUTTON8, m_ctrlErase);
+    DDX_Control(pDX, IDC_EDIT2, m_ctrlErasePageNum);
+    DDX_Control(pDX, IDC_CHECK1, m_ctrlEraseAll);
+    DDX_Control(pDX, IDC_EDIT1, m_ctrlEdit);
+    DDX_Control(pDX, IDC_COMBO1, m_ctrlChipSel);
+    DDX_Control(pDX, IDC_BUTTON5, m_ctrlCodeSaveAs);
+    DDX_Control(pDX, IDC_COMBO3, m_ctrlMemAddrBegin);
+    DDX_Control(pDX, IDC_COMBO4, m_ctrlDataLength);
+    DDX_Control(pDX, IDC_PROGRESS1, m_ctrlProgress);
+    DDX_Control(pDX, IDC_CHECK3, m_ctrlSaveAppend);
+    DDX_Control(pDX, IDC_LIST1, m_ctrlListBuffer);
+    DDX_Control(pDX, IDC_COMBO6, m_cbDataToFill);
+    DDX_Control(pDX, IDC_CHECK4, m_chkFillBufferAll);
+    DDX_Control(pDX, IDC_CHECK5, m_chkClearBufferAll);
 }
 
 BEGIN_MESSAGE_MAP(COTPWriterProDlg, CDialogEx)
@@ -88,7 +91,6 @@ BEGIN_MESSAGE_MAP(COTPWriterProDlg, CDialogEx)
 	ON_WM_TIMER()
 	ON_BN_CLICKED(IDC_BUTTON6, &COTPWriterProDlg::OnBnClickedButtonWrite)
 	ON_BN_CLICKED(IDC_BUTTON4, &COTPWriterProDlg::OnBnClickedButtonOpenFile)
-	ON_BN_CLICKED(IDC_CHECK2, &COTPWriterProDlg::OnBnClickedCheckConsoleEnable)
 	ON_BN_CLICKED(IDC_BUTTON5, &COTPWriterProDlg::OnBnClickedButtonSaveAs)
 	ON_BN_CLICKED(IDC_BUTTON9, &COTPWriterProDlg::OnBnClickedButtonVerify)
 	ON_BN_CLICKED(IDC_BUTTON10, &COTPWriterProDlg::OnBnClickedButtonEncrypt)
@@ -101,6 +103,9 @@ BEGIN_MESSAGE_MAP(COTPWriterProDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON13, &COTPWriterProDlg::OnBnClickedButtonTestDec)
 	ON_BN_CLICKED(IDC_BUTTON14, &COTPWriterProDlg::OnBnClickedButtonTestWR)
 	ON_BN_CLICKED(IDC_BUTTON15, &COTPWriterProDlg::OnBnClickedButtonChipReset)
+	ON_BN_CLICKED(IDC_BUTTON18, &COTPWriterProDlg::OnBnClickedButtonInBuffer)
+    ON_BN_CLICKED(IDC_BUTTON19, &COTPWriterProDlg::OnBnClickedButtonOption)
+    ON_BN_CLICKED(IDC_BUTTON20, &COTPWriterProDlg::OnBnClickedButtonClearBuffer)
 END_MESSAGE_MAP()
 
 
@@ -136,20 +141,13 @@ BOOL COTPWriterProDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
-	m_ctrlDebugMode.SetCheck(TRUE);
-	if (m_ctrlDebugMode.GetCheck())	hgzOpenConsole();
-
 	m_ctrlChipSel.SetCurSel(0);
 	m_ctrlMemAddrBegin.SetWindowText(_T("0000"));
 	m_ctrlDataLength.SetWindowText(_T("16384"));
-	m_ctrlPacketDataLength.SetWindowText(_T("16"));
 
 	memset(m_buf, 0, sizeof(m_buf));
-	m_buf_num = 0;
-	m_buf_data_length = 0;
-	/*memset(rbuf, 0, sizeof(rbuf));
-	rbuf_num = 0;
-	rbuf_data_length = 0;*/
+    memset(m_bufFlag, 0, sizeof(m_bufFlag));
+	m_bufDataLength = 0;
 	process_state = process_state_idle;
 
 	m_ctrlProgress.SetRange(0, 100);
@@ -178,9 +176,12 @@ BOOL COTPWriterProDlg::OnInitDialog()
 	}
 
 
-
-
-
+    // Option
+    m_option.bEnableConsoleOutput = TRUE;
+    m_option.bEnableIncontinuousCell = FALSE;
+    m_option.nPacketDataLength = 52;
+    if (m_option.bEnableConsoleOutput)	
+        hgzOpenConsole();
 
 
 
@@ -382,7 +383,7 @@ void COTPWriterProDlg::OnBnClickedButton1()
 	// Read requested state. hid_read() has been set to be
 	// non-blocking by the call to hid_set_nonblocking() above.
 	// This loop demonstrates the non-blocking nature of hid_read().
-	res = 0;
+	/*res = 0;
 	while (res == 0) {
 		res = hid_read(handle, buf, sizeof(buf));
 		if (res == 0)
@@ -400,7 +401,7 @@ void COTPWriterProDlg::OnBnClickedButton1()
 	// Print out the returned buffer.
 	for (i = 0; i < res; i++)
 		printf("%02hhx ", buf[i]);
-	printf("\n");
+	printf("\n");*/
 
 	hid_close(handle);
 
@@ -493,7 +494,7 @@ void COTPWriterProDlg::OnBnClickedButton2()
 	SetupDiDestroyDeviceInfoList( hDevInfo );
 }
 
-hid_device * COTPWriterProDlg::Hid_OpenTopLevelCollection( unsigned short vendor_id, unsigned short product_id )
+hid_device * COTPWriterProDlg::Hid_OpenTopLevelCollection( unsigned short vendorID, unsigned short productID )
 {
 	// use HIDAPI
 	int res;
@@ -514,7 +515,7 @@ hid_device * COTPWriterProDlg::Hid_OpenTopLevelCollection( unsigned short vendor
 	// and optionally the Serial number.
 	////handle = hid_open(0x4d8, 0x3f, L"12345");
 	//handle = hid_open(0x4d8, 0x3f, NULL);
-	handle = hid_open(vendor_id, product_id, NULL);
+	handle = hid_open(vendorID, productID, NULL);
 	if (!handle) {
 		printf("unable to open device\n");
 		return handle;
@@ -564,7 +565,7 @@ void COTPWriterProDlg::OnTimer(UINT_PTR nIDEvent)
 				return;
 			}
 
-			int res = hid_read(handle, (unsigned char *)&r, sizeof(r));
+			int res = hid_read(handle, (unsigned char *)&r.packet, sizeof(r.packet));
 			if (res < 0) {
 				printf("Unable to read().\n");
 				printf("Error: %ls\n", hid_error(handle));
@@ -590,13 +591,13 @@ void COTPWriterProDlg::OnTimer(UINT_PTR nIDEvent)
 				printf("Error: %ls\n", hid_error(handle));
 			}
 
-			if (r.packet.m_pkt.MemPkt.data_length == 0) {
+			if (r.packet.m_pkt.memPkt.datalen == 0) {
 				KillTimer(2);
 				//SaveMemFile();
 			}
 			else {
-				memcpy(&rbuf[rbuf_num], r.packet.m_pkt.MemPkt.data, r.packet.m_pkt.MemPkt.data_length);
-				rbuf_num += r.packet.m_pkt.MemPkt.data_length;
+				memcpy(&rbuf[rbuf_num], r.packet.m_pkt.memPkt.data, r.packet.m_pkt.memPkt.datalen);
+				rbuf_num += r.packet.m_pkt.memPkt.datalen;
 			}
 			
 			
@@ -614,12 +615,6 @@ void COTPWriterProDlg::OnTimer(UINT_PTR nIDEvent)
 	CDialogEx::OnTimer(nIDEvent);
 }
 
-void COTPWriterProDlg::OnBnClickedCheckConsoleEnable()
-{
-	if (m_ctrlDebugMode.GetCheck()) hgzOpenConsole();
-	else hgzCloseConsole();
-}
-
 void COTPWriterProDlg::OnBnClickedButtonOpenFile()
 {
 	m_ctrlProgress.SetPos(0);
@@ -632,53 +627,63 @@ void COTPWriterProDlg::OnBnClickedButtonOpenFile()
 	{
 		return;
 	}
-	CString PathName = dlg.GetPathName();
-	CString FileExt = dlg.GetFileExt();
+	CString pathName = dlg.GetPathName();
+	CString fileExt = dlg.GetFileExt();
 
 	CStdioFile mFile;
 	CFileException mExcept;
 	
-	m_buf_data_length = 0;
 	HEXRECORD_t hr; 
 
 	PrintCurrentTime();
 
 	CString s;
-	s.Format(_T("Open file: %s ...   0%%"), PathName);
+	s.Format(_T("Open file: %s ...   0%%"), pathName);
 	EditCtrlOutput(s);
 
-	if (FileExt.CompareNoCase(_T("HEX")) == 0) {
-		mFile.Open(PathName, CFile::modeRead | CFile::typeText, &mExcept);
+	if (fileExt.CompareNoCase(_T("HEX")) == 0) 
+    {
+		mFile.Open(pathName, CFile::modeRead | CFile::typeText, &mExcept);
 		unsigned int addr = 0;
-		unsigned int filelen = mFile.GetLength();
 		unsigned int curpos = 0;
-		while (mFile.GetPosition() != mFile.GetLength()) 
+        unsigned int fileLen = (unsigned int)mFile.GetLength();
+        
+        if (fileLen) 
+        {
+            ClearBuffer(0, m_bufDataLength);
+        }
+        else 
+        {
+            AfxMessageBox(_T("File is empty!"));
+            mFile.Close();
+            return;
+        }
+		
+		while ((curpos = (unsigned int)mFile.GetPosition()) != fileLen) 
 		{
-			HexRecReadFromFile(m_buf, mFile, hr, addr);
+			HexRecReadFromFile(m_buf, m_bufFlag, mFile, hr, addr);
 			
-			curpos = mFile.GetPosition();
-			int percent = 100 * curpos / filelen;
+			int percent = 100 * curpos / fileLen;
 			m_ctrlProgress.SetPos(percent);
 			s.Format(_T("%3d%%"), percent);
 			EditCtrlOutput(s, -4);
 		}
-		m_buf_data_length = addr;
+		m_bufDataLength = addr;
 	}
-	else if (FileExt.CompareNoCase(_T("BIN")) == 0) {
-		mFile.Open(PathName, CFile::modeRead | CFile::typeBinary, &mExcept);
-		m_buf_data_length = mFile.Read(m_buf, mFile.GetLength());
+	else if (fileExt.CompareNoCase(_T("BIN")) == 0) 
+    {
+		mFile.Open(pathName, CFile::modeRead | CFile::typeBinary, &mExcept);
+		m_bufDataLength = mFile.Read(m_buf, mFile.GetLength());
+        memset(m_bufFlag, 1, m_bufDataLength);
 	}
+
 
 	m_ctrlProgress.SetPos(100);
 	EditCtrlOutput(s = _T("100%\r\n"), -4);
 	mFile.Close();
 
-	for (int i = 0; i < m_buf_data_length ; i++)
-	{
-		CString s;
-		s.Format(_T("%02X"), m_buf[i]);
-		m_ctrlListBuffer.SetItemText(i/16, i%16 + 1, s);
-	}
+    //UpdateBufferShow();
+    UpdateBufferDisplay(0, m_bufDataLength);
 }
 
 void COTPWriterProDlg::OnBnClickedButtonSaveAs()
@@ -686,7 +691,7 @@ void COTPWriterProDlg::OnBnClickedButtonSaveAs()
 	m_ctrlProgress.SetPos(0);
 	m_ctrlListBuffer.EndEdit(TRUE);
 	
-	if (m_buf_data_length == 0) {
+	if (m_bufDataLength == 0) {
 		MessageBox(_T("No data to save."));
 		return;
 	}
@@ -696,8 +701,8 @@ void COTPWriterProDlg::OnBnClickedButtonSaveAs()
 	{
 		return;
 	}
-	CString PathName = dlg.GetPathName();
-	CString FileExt = dlg.GetFileExt();
+	CString pathName = dlg.GetPathName();
+	CString fileExt = dlg.GetFileExt();
 
 	CStdioFile mFile;
 	CFileException mExcept;
@@ -705,12 +710,12 @@ void COTPWriterProDlg::OnBnClickedButtonSaveAs()
 	PrintCurrentTime();
 
 	CString s;
-	s.Format(_T("Save file: %s ...   0%%"), PathName);
+	s.Format(_T("Save file: %s ...   0%%"), pathName);
 	EditCtrlOutput(s);
 
-	if (FileExt.CompareNoCase(_T("HEX")) == 0) {
+	if (fileExt.CompareNoCase(_T("HEX")) == 0) {
 		HEXRECORD_t hr;
-		mFile.Open(PathName, CFile::modeCreate | CFile::modeWrite | CFile::typeText, &mExcept);
+		mFile.Open(pathName, CFile::modeCreate | CFile::modeWrite | CFile::typeText, &mExcept);
 		
 		/*auto checksum = [&] () -> unsigned char {
 			unsigned char x = hr.reclen + hr.addrh + hr.addrl + hr.rectype;
@@ -722,10 +727,10 @@ void COTPWriterProDlg::OnBnClickedButtonSaveAs()
 			return x;
 		};*/
 
-		for (unsigned int addr = 0; ; addr += 16)
+		for (unsigned int addr = 0, rec_data_len = 0; ; addr += rec_data_len)
 		{
 
-			if (addr >= m_buf_data_length) {
+			if (addr >= m_bufDataLength) {
 				HexRec(hr, HEX_REC_EOF, 0, 0, NULL);
 				HexRecSaveToFile(hr, mFile);
 				break;
@@ -733,26 +738,22 @@ void COTPWriterProDlg::OnBnClickedButtonSaveAs()
 			else if (addr && (addr % 0x10000 == 0)) {
 				HexRec(hr, HEX_REC_ELA,  2, addr, m_buf);
 				HexRecSaveToFile(hr, mFile);
-				
-				HexRec(hr, HEX_REC_DAT, 16 < (m_buf_data_length-addr) ? 16 : (m_buf_data_length-addr), addr, m_buf);
-				HexRecSaveToFile(hr, mFile);
 			}
-			else {
-				HexRec(hr, HEX_REC_DAT, 16 < (m_buf_data_length-addr) ? 16 : (m_buf_data_length-addr), addr, m_buf);
-				HexRecSaveToFile(hr, mFile);
-			}
-			
+			rec_data_len = 16 < (m_bufDataLength-addr) ? 16 : (m_bufDataLength-addr);
+            HexRec(hr, HEX_REC_DAT, rec_data_len, addr, m_buf);
+			HexRecSaveToFile(hr, mFile);
+
 			// progress
-			int percent = 100*addr / m_buf_data_length;
+			int percent = 100*addr / m_bufDataLength;
 			m_ctrlProgress.SetPos(percent);
 			s.Format(_T("%3d%%"), percent);
 			EditCtrlOutput(s, -4);
 		}
 	}
-	else if (FileExt.CompareNoCase(_T("BIN")) == 0) {
-		mFile.Open(PathName, CFile::modeCreate | CFile::modeWrite | CFile::typeBinary, &mExcept);
+	else if (fileExt.CompareNoCase(_T("BIN")) == 0) {
+		mFile.Open(pathName, CFile::modeCreate | CFile::modeWrite | CFile::typeBinary, &mExcept);
 		m_ctrlSaveAppend.GetCheck() ? mFile.SeekToEnd() : mFile.SeekToBegin();
-		mFile.Write(m_buf, m_buf_data_length);
+		mFile.Write(m_buf, m_bufDataLength);
 	}
 	else {
 		MessageBox(_T("Only Hex/Bin file suported."));
@@ -777,7 +778,7 @@ void COTPWriterProDlg::EditCtrlOutput( CString &s, int pos )
 
 void COTPWriterProDlg::OnBnClickedButtonWrite()
 {
-	if (m_buf_data_length == 0) {
+	if (m_bufDataLength == 0) {
 		MessageBox(_T("No data to write."));
 		return;
 	}
@@ -796,26 +797,38 @@ void COTPWriterProDlg::OnBnClickedButtonWrite()
 #endif
 
 	// Start Write
-		HIDREPORT_t r;
-		m_buf_num = 0;
-		unsigned int start_addr = GetStartAddress();
-		unsigned int length = GetDataLength();
-		unsigned int packet_data_length = GetPacketDataLength();
-		while (m_buf_num != length) 
-		{
-			// build the MemWrite packet.
-			m_buf_num += BuildMemWritePacket(r, m_buf, start_addr+m_buf_num, length-m_buf_num, packet_data_length);
+	HIDREPORT_t r;
+	unsigned int m_buf_num = 0;
+	unsigned int start_addr = GetStartAddress();
+	unsigned int length = min(GetDataLength(), m_bufDataLength);
+    if (length == 0)
+    {
+        AfxMessageBox(_T("The lenth of data to write can't be 0!"));
+        goto OnBnClickedButtonWrite_Label;
+    }
+	unsigned int packet_data_length = m_option.nPacketDataLength;
+    if (packet_data_length == 0)
+    {
+        AfxMessageBox(_T("packet data length can't be 0!"));
+        goto OnBnClickedButtonWrite_Label;
+    }
+
+	while (m_buf_num != length) 
+	{
+		// build the MemWrite packet.
+		m_buf_num += BuildMemWriteReport(r, m_buf, start_addr+m_buf_num, length-m_buf_num, packet_data_length);
 
 #if TEST_ON == 0
-			int res = 0;
-			res = SendPacket(handle, r);
-			if (res < 0) break;
-			res = ReceivePacket(handle, r);
-			if (res < 0) break;
+        if (SendAndWaitToReceiveReport(r, handle) < 0) 
+            break;
 #endif
-			m_ctrlProgress.SetPos(m_buf_num*100/length);
-		}
+		m_ctrlProgress.SetPos(m_buf_num*100/length);
+	}
+    // Send the terminating data-empty packet.
+    BuildMemWriteReport(r, m_buf, start_addr+m_buf_num, length-m_buf_num, packet_data_length);
+    SendAndWaitToReceiveReport(r, handle);
 
+    OnBnClickedButtonWrite_Label:
 #if TEST_ON == 0
 	hid_close(handle); /* Free handle objects. */
 	hid_exit(); /* Free static HIDAPI objects. */
@@ -831,7 +844,7 @@ void COTPWriterProDlg::OnBnClickedButtonRead()
 
 #if TEST_ON == 0
 	// Open the device using the VID, PID, and optionally the Serial number.
-	hid_device *handle = handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
+	hid_device *handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
 	if (!handle) {
 		printf("Unable to open device\n");
 		return;
@@ -856,7 +869,7 @@ void COTPWriterProDlg::OnBnClickedButtonRead()
 void COTPWriterProDlg::OnBnClickedButtonVerify()
 {
 	// if (isEmpty(buf)) { messagebox(error); return;}
-	if (m_buf_data_length == 0) {
+	if (m_bufDataLength == 0) {
 		MessageBox(_T("There's no data in the buffer to verify."));
 		return;
 	}
@@ -879,17 +892,17 @@ void COTPWriterProDlg::OnBnClickedButtonVerify()
 
 	unsigned int start_addr = GetStartAddress();
 	unsigned int total_length = GetDataLength();
-	total_length = total_length <= m_buf_data_length ? total_length : m_buf_data_length;
+	total_length = total_length <= m_bufDataLength ? total_length : m_bufDataLength;
 	unsigned int addr = start_addr;
 	unsigned int length = 16;
 	HIDREPORT_t r;
 	int res = 0;
 	// loop
-	for (int i = 0; i < m_buf_data_length; i++, addr += length)
+	for (int i = 0; i < m_bufDataLength; i++, addr += length)
 	{
 		// read N bytes to a temp buffer
 		if (MemRead(handle, r, addr, length) == 0) {
-			_tprintf(_T("Verification error (addr | mem_data | buffer_data): %08X | %02X | %02X\r\n"), addr+res, r.packet.m_pkt.MemPkt.data[i], m_buf[i]);
+			_tprintf(_T("Verification error (addr | mem_data | buffer_data): %08X | %02X | %02X\r\n"), addr+res, r.packet.m_pkt.memPkt.data[i], m_buf[i]);
 			goto OnBnClickedButtonVerify_local_exit;
 		}
 		
@@ -898,7 +911,7 @@ void COTPWriterProDlg::OnBnClickedButtonVerify()
 
 		// if error, message(error), return; else continue.
 		if (res != -1) {
-			_tprintf(_T("Verification error (addr | mem_data | buffer_data): %08X | %02X | %02X\r\n"), addr+res, r.packet.m_pkt.MemPkt.data[i], m_buf[i]);
+			_tprintf(_T("Verification error (addr | mem_data | buffer_data): %08X | %02X | %02X\r\n"), addr+res, r.packet.m_pkt.memPkt.data[i], m_buf[i]);
 			goto OnBnClickedButtonVerify_local_exit;
 		}
 
@@ -919,13 +932,13 @@ OnBnClickedButtonVerify_local_exit:
 
 void COTPWriterProDlg::OnBnClickedButtonEncrypt()
 {
-	return ExecuteMemCmd(HS_MEM_WRDIS);
+	return ExecuteMemCmd(HS__MEM__WRDIS);
 
 }
 
 void COTPWriterProDlg::OnBnClickedButtonErase()
 {
-	return ExecuteMemCmd(HS_MEM_ERASE_PAGE);
+	return ExecuteMemCmd(HS__MEM__ERASE_PAGE);
 }
 
 void COTPWriterProDlg::PrintCurrentTime()
@@ -936,94 +949,94 @@ void COTPWriterProDlg::PrintCurrentTime()
 	EditCtrlOutput(s);
 }
 
-int COTPWriterProDlg::BuildMemWritePacket( HIDREPORT_t &r, unsigned char *buf, unsigned int addr, unsigned int length, unsigned int packet_data_length, unsigned int report_id /*= 0 */ )
+int COTPWriterProDlg::BuildMemWriteReport( HIDREPORT_t &r, unsigned char *buf, unsigned int addr, unsigned int length, unsigned int packetDataLength, unsigned int reportID /*= 0 */ )
 {
-	int datalen = length <= packet_data_length ? length : packet_data_length;
+	int datalen = length <= packetDataLength ? length : packetDataLength;
 	
-	r.report_id = report_id;
-	r.packet.m_pkt.MemPkt.pl = 11 + datalen;
-	r.packet.m_pkt.MemPkt.pid = HS_PID_MEM;
-	r.packet.m_pkt.MemPkt.cmd = HS_MEM_WRITE;
-	r.packet.m_pkt.MemPkt.address = addr;
-	r.packet.m_pkt.MemPkt.data_length = datalen;
-	memcpy(r.packet.m_pkt.MemPkt.data, buf+addr, datalen);
+	r.reportID = reportID;
+	r.packet.m_pkt.memPkt.len = 12 + datalen;
+    r.packet.m_pkt.memPkt.csb = 0;
+	r.packet.m_pkt.memPkt.cmdL1 = HS__MEM;
+	r.packet.m_pkt.memPkt.cmdL2 = HS__MEM__WRITE;
+	r.packet.m_pkt.memPkt.addr = addr;
+	r.packet.m_pkt.memPkt.dataLen = datalen;
+	memcpy(r.packet.m_pkt.memPkt.data, buf+addr, datalen);
 
-	hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.MemPkt.address, 4);
-	hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.MemPkt.data_length, 4);
+	hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.memPkt.addr, 4);
+	hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.memPkt.dataLen, 4);
 
-	r.packet.print();
+	//r.packet.print();
 	
 	return datalen;
 }
 
-BOOL COTPWriterProDlg::BuildMemReadPacket( HIDREPORT_t &r, unsigned int addr, unsigned int length, unsigned int report_id /*= 0 */ )
+BOOL COTPWriterProDlg::BuildMemReadReport( HIDREPORT_t &r, unsigned int addr, unsigned int length, unsigned int reportID /*= 0 */ )
 {
-//	if (length == 0) return FALSE;
-	int datalen = length;
+	r.reportID = reportID;
+	r.packet.m_pkt.memPkt.len = 12;
+    r.packet.m_pkt.memPkt.csb = 0;
+	r.packet.m_pkt.memPkt.cmdL1 = HS__MEM;
+	r.packet.m_pkt.memPkt.cmdL2 = HS__MEM__READ;
+	r.packet.m_pkt.memPkt.addr = addr;
+	r.packet.m_pkt.memPkt.dataLen = length;
 
-	r.report_id = report_id;
-	r.packet.m_pkt.MemPkt.pl = 11;
-	r.packet.m_pkt.MemPkt.pid = HS_PID_MEM;
-	r.packet.m_pkt.MemPkt.cmd = HS_MEM_READ;
-	r.packet.m_pkt.MemPkt.address = addr;
-	r.packet.m_pkt.MemPkt.data_length = datalen;
+	hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.memPkt.addr, 4);
+	hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.memPkt.dataLen, 4);
 
-	hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.MemPkt.address, 4);
-	hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.MemPkt.data_length, 4);
-
-	r.packet.print();
+	//r.packet.print();
 
 	return TRUE;
 }
 
-BOOL COTPWriterProDlg::BuildMemCmdPacket( HIDREPORT_t &r, unsigned char MemCmd, unsigned int report_id/*=0 */ )
+BOOL COTPWriterProDlg::BuildMemCmdReport( HIDREPORT_t &r, unsigned char memCmd, unsigned int reportID/*=0 */ )
 {
-	r.report_id = report_id;
-	r.packet.m_pkt.CmdPkt.pl = 3;
-	r.packet.m_pkt.CmdPkt.pid = HS_PID_MEM;
-	r.packet.m_pkt.CmdPkt.cmd = MemCmd;
+	r.reportID = reportID;
+	r.packet.m_pkt.cmdPkt.len = sizeof(CPacket::HS_CMD_PACKET_t);
+    r.packet.m_pkt.cmdPkt.csb = 0;
+	r.packet.m_pkt.cmdPkt.cmdL1 = HS__MEM;
+	r.packet.m_pkt.cmdPkt.cmdL2 = memCmd;
 	
-	switch (MemCmd)
+	switch (memCmd)
 	{
-	case HS_MEM_ENTER:
-	case HS_MEM_EXIT:
-	case HS_MEM_WREN:
-	case HS_MEM_WRDIS:
-	case HS_MEM_ACCESS_DISABLE:
-	case HS_MEM_READ_DISABLE:
-	case HS_MEM_WRITE_DISABLE:
-	case HS_MEM_BLKCHK:
-	case HS_MEM_RESET:
-	case HS_MEM_TEST_BLKCHK:
-	case HS_MEM_TEST_DEC:
-	case HS_MEM_TEST_WR:
-	case HS_MEM_ERASE_ALL:
-	case HS_MEM_RDFPCR:
-	case HS_MEM_RDSR:
+	case HS__MEM__ENTER:
+	case HS__MEM__EXIT:
+	case HS__MEM__WREN:
+	case HS__MEM__WRDIS:
+	case HS__MEM__ACCESS_DISABLE:
+	case HS__MEM__READ_DISABLE:
+	case HS__MEM__WRITE_DISABLE:
+	case HS__MEM__BLKCHK:
+	case HS__MEM__RESET:
+	case HS__MEM__TEST_BLKCHK:
+	case HS__MEM__TEST_DEC:
+	case HS__MEM__TEST_WR:
+	case HS__MEM__ERASE_ALL:
+	case HS__MEM__RDFPCR:
+	case HS__MEM__RDSR:
 		break;
 
-	case HS_MEM_ERASE_PAGE:
+	case HS__MEM__ERASE_PAGE:
 		{
-			r.packet.m_pkt.CmdPkt.pl += 8;
+			r.packet.m_pkt.cmdPkt.len += 8;
 			CString s;
 			m_ctrlErasePageNum.GetWindowText(s);
 			s.Trim();
 			if (s.GetLength() == 0) return FALSE;
 
-			r.packet.m_pkt.MemPkt.address = stoul(s.GetString(), 0, 10);
-			r.packet.m_pkt.MemPkt.data_length = stoul(s.GetString(), 0, 10);
+			r.packet.m_pkt.memPkt.addr = stoul(s.GetString(), 0, 10);
+			r.packet.m_pkt.memPkt.dataLen = stoul(s.GetString(), 0, 10);
 			
-			hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.MemPkt.address, 4);
-			hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.MemPkt.data_length, 4);			
+			hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.memPkt.addr, 4);
+			hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.memPkt.dataLen, 4);			
 
 			r.packet.print();
 
 			return TRUE;
 		}
-	case HS_MEM_WRSR:
+	case HS__MEM__WRSR:
 		{
-			r.packet.m_pkt.CmdPkt.pl += 1;
-			r.packet.m_pkt.ValPkt.value = 0x00; // value to set
+			r.packet.m_pkt.cmdPkt.len += 1;
+			r.packet.m_pkt.valPkt.val = 0x00; // value to set
 
 			return TRUE;
 		}
@@ -1037,12 +1050,12 @@ BOOL COTPWriterProDlg::BuildMemCmdPacket( HIDREPORT_t &r, unsigned char MemCmd, 
 	return TRUE;
 }
 
-int COTPWriterProDlg::ReceivePacket( hid_device * handle, HIDREPORT_t &r )
+int COTPWriterProDlg::ReceiveReport( hid_device * handle, HIDREPORT_t &r )
 {
 	HIDREPORT_t r1;
-	r1.report_id = r.report_id;
-	r1.packet.m_pkt.MemPkt.pid = r.packet.m_pkt.MemPkt.pid;
-	r1.packet.m_pkt.MemPkt.cmd = r.packet.m_pkt.MemPkt.cmd;
+	r1.reportID = r.reportID;
+	r1.packet.m_pkt.memPkt.cmdL1 = r.packet.m_pkt.memPkt.cmdL1;
+	r1.packet.m_pkt.memPkt.cmdL2 = r.packet.m_pkt.memPkt.cmdL2;
 
 	// Set the hid_read() function to be non-blocking.
 	hid_set_nonblocking(handle, 1);
@@ -1051,54 +1064,56 @@ int COTPWriterProDlg::ReceivePacket( hid_device * handle, HIDREPORT_t &r )
 	// non-blocking by the call to hid_set_nonblocking() above.
 	// This loop demonstrates the non-blocking nature of hid_read().
 	int res = 0;
-	printf("waiting...\n");
+	printf("Receiving Report ...\n");
 	while (res == 0) {
-		res = hid_read(handle, (unsigned char *)&r, sizeof(r));
-		if (res == 0)
-			printf(".");
+		res = hid_read(handle, (unsigned char *)&r.packet, sizeof(r.packet));
+// 		if (res == 0)
+// 			printf(".");
 		if (res < 0)
 			printf("Unable to read()\n");
-		Sleep(500);
+		//Sleep(500);
 	}
-	printf("\n");
-	/*if (r.packet.m_pkt.MemPkt.pid == HS_PID_MEM 
-		&& r.packet.m_pkt.MemPkt.cmd == HS_MEM_WRITE
-		&& r.packet.m_pkt.MemPkt.data_length == 0)*/
-	if (r.packet.m_pkt.MemPkt.pid == r1.packet.m_pkt.MemPkt.pid && 
-		r.packet.m_pkt.MemPkt.cmd == r1.packet.m_pkt.MemPkt.cmd)
+	printf("Received data: ");
+    r.packet.print();
+	
+    /*if (r.packet.m_pkt.memPkt.cmdL1 == HS__MEM 
+		&& r.packet.m_pkt.memPkt.cmdL2 == HS__MEM__WRITE
+		&& r.packet.m_pkt.memPkt.datalen == 0)*/
+	if (r.packet.m_pkt.memPkt.cmdL1 == r1.packet.m_pkt.memPkt.cmdL1 && 
+		r.packet.m_pkt.memPkt.cmdL2 == r1.packet.m_pkt.memPkt.cmdL2)
 	{
 		res = 1;
-		if (r.packet.m_pkt.MemPkt.pid == HS_PID_MEM &&
-			r.packet.m_pkt.MemPkt.cmd == HS_MEM_READ) 
+		if (   r.packet.m_pkt.memPkt.cmdL1 == HS__MEM 
+			&& r.packet.m_pkt.memPkt.cmdL2 == HS__MEM__READ) 
 		{
-			//hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.MemPkt.address, 4);
-			//hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.MemPkt.data_length, 4);
+			//hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.memPkt.addr, 4);
+			//hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.memPkt.datalen, 4);
 		}
 	}
 	else {
-		tcout << endl << _T("Write error!") << endl;
+		tcout << endl << _T("Read error!") << endl;
 		res = -1;
 	}	
 	
 	return res;
 }
 
-int COTPWriterProDlg::SendPacket( hid_device * handle, HIDREPORT_t &r )
+int COTPWriterProDlg::SendReport( hid_device * handle, HIDREPORT_t &r )
 {
 	// Set the hid_write() function to be blocking.
-	hid_set_nonblocking(handle, 0);
-	// send HS_MEM_WRITE packet.
+	hid_set_nonblocking(handle, 1);
+	// send HS__MEM__WRITE packet.
 	int res = hid_write(handle, (unsigned char *)&r, sizeof(r));
 	
 	CString s;
-	switch (r.packet.m_pkt.MemPkt.cmd)
+	switch (r.packet.m_pkt.memPkt.cmdL2)
 	{
-	case HS_MEM_WRITE:
-		s = "HS_MEM_WRITE";
+	case HS__MEM__WRITE:
+		s = "HS__MEM__WRITE";
 		break;
 
-	case HS_MEM_READ:
-		s = "HS_MEM_READ";
+	case HS__MEM__READ:
+		s = "HS__MEM__READ";
 		break;
 
 	default:
@@ -1120,56 +1135,59 @@ afx_msg LRESULT COTPWriterProDlg::OnLvmItemChanged(WPARAM wParam, LPARAM lParam)
 {
 	TRACE(_T("Received WM_LVM_ENDEDIT message: %d, %d\n"), wParam, lParam);
 
+    unsigned int addr = wParam*16 + lParam-1;
+
 	CString s;
 	s = m_ctrlListBuffer.GetItemText(wParam, lParam);
 	s.Trim();
 	if (s.GetLength() == 0) {
-		m_buf[wParam*16 + lParam-1] = 0;
+		m_buf[addr] = 0;
+        m_bufFlag[addr] = 0;
 	}
 	else {
-		m_buf[wParam*16 + lParam-1] = stoul(s.GetString(), 0, 16);
-		s.Format(_T("%02X"), m_buf[wParam*16 + lParam-1]);
+		m_buf[addr] = stoul(s.GetString(), 0, 16);
+		s.Format(_T("%02X"), m_buf[addr]);
 		m_ctrlListBuffer.SetItemText(wParam, lParam, s);
+        m_bufFlag[addr] = 1;
+        m_bufDataLength = max(addr+1, m_bufDataLength);
 	}
 
 	return 0;
 }
 
-int COTPWriterProDlg::MemRead( hid_device * handle, HIDREPORT_t &r, unsigned int start_addr, unsigned int length )
+unsigned int COTPWriterProDlg::MemRead( hid_device * handle, HIDREPORT_t &r, unsigned int startAddr, unsigned int length )
 {
-	BuildMemReadPacket(r, start_addr, length);
+	BuildMemReadReport(r, startAddr, length);
 
+    long long received_num = 0;
 #if TEST_ON == 0
 	// Start Write
 		int res = 0;
-		res = SendPacket(handle, r);
+        r.packet.print();
+		res = SendReport(handle, r);
 		if (res < 0) {
 			process_state = process_state_idle;
-			m_buf_num = 0;
 			return 0;
 		}
 
-		long long received_num = 0;
 		while (process_state == process_state_read) 
 		{
-			res = ReceivePacket(handle, r);
+			res = ReceiveReport(handle, r);
 			if (res < 0) break;
 
-			unsigned int datalen = hgzRevertByteOrder32(r.packet.m_pkt.MemPkt.data_length);
+			unsigned int datalen = hgzRevertByteOrder32(r.packet.m_pkt.memPkt.dataLen);
 			if (datalen == 0) {
 				m_ctrlProgress.SetPos(100);
 				break;
 			}
 			else {
 				received_num += datalen;
-				memcpy(hgzRevertByteOrder32(m_buf+r.packet.m_pkt.MemPkt.address), r.packet.m_pkt.MemPkt.data, datalen);
+				memcpy(m_buf+hgzRevertByteOrder32(r.packet.m_pkt.memPkt.addr), r.packet.m_pkt.memPkt.data, datalen);
 			}
 			m_ctrlProgress.SetPos(received_num*100/length);
 		}
-		if (received_num != 0) m_buf_num = received_num;
 #endif
-
-		return 1;
+        return (unsigned int)received_num;
 }
 
 unsigned int COTPWriterProDlg::GetStartAddress()
@@ -1192,25 +1210,11 @@ unsigned int COTPWriterProDlg::GetDataLength()
 	return length;
 }
 
-unsigned int COTPWriterProDlg::GetPacketDataLength()
-{
-	CString s;
-	HIDREPORT_t r;
-	unsigned int packet_data_length = sizeof(r.packet.m_pkt.MemPkt.data);
-	if (m_ctrlPacketDataLength.GetWindowTextLength()) {
-		m_ctrlPacketDataLength.GetWindowText(s);
-		unsigned int x = stoul((tstring)s.GetString());
-		if (x > 0 && x < packet_data_length) packet_data_length = x;
-	}
-
-	return packet_data_length;
-}
-
 int COTPWriterProDlg::CompareMemData( HIDREPORT_t & r, unsigned char *buf )
 {
-	for (int i = 0; i < r.packet.m_pkt.MemPkt.data_length ; i++)
+	for (int i = 0; i < r.packet.m_pkt.memPkt.dataLen ; i++)
 	{
-		if (r.packet.m_pkt.MemPkt.data[i] != buf[r.packet.m_pkt.MemPkt.address + i]) {
+		if (r.packet.m_pkt.memPkt.data[i] != buf[r.packet.m_pkt.memPkt.addr + i]) {
 			return i; // index of the first error byte.
 		}
 	}
@@ -1218,14 +1222,14 @@ int COTPWriterProDlg::CompareMemData( HIDREPORT_t & r, unsigned char *buf )
 	return -1; // successful
 }
 
-afx_msg void COTPWriterProDlg::ExecuteMemCmd( unsigned char MemCmd )
+afx_msg void COTPWriterProDlg::ExecuteMemCmd( unsigned char memCmd )
 {
 	if (process_state != process_state_idle) return;
-	process_state = (enum _FLAG_t)MemCmd;
+	process_state = (enum _FLAG_t)memCmd;
 
 	HIDREPORT_t r;
 	
-	if (BuildMemCmdPacket(r, MemCmd) == FALSE) {
+	if (BuildMemCmdReport(r, memCmd) == FALSE) {
 		process_state = process_state_idle;
 		return;
 	}
@@ -1239,11 +1243,11 @@ afx_msg void COTPWriterProDlg::ExecuteMemCmd( unsigned char MemCmd )
 	}
 
 	int res = 0;
-	res = SendPacket(handle, r);
+	res = SendReport(handle, r);
 	if (res < 0) {
 
 	}
-	res = ReceivePacket(handle, r);
+	res = ReceiveReport(handle, r);
 	if (res < 0) {
 
 	}
@@ -1255,54 +1259,188 @@ afx_msg void COTPWriterProDlg::ExecuteMemCmd( unsigned char MemCmd )
 	process_state = process_state_idle;
 }
 
-void COTPWriterProDlg::UpdateBufferDisplay( unsigned int addr, unsigned int length )
-{
-	CString s;
-	for (int i = addr; i < addr+length ; i++)
-	{
-		s.Format(_T("%02X"), m_buf[i]);
-		m_ctrlListBuffer.SetItemText(i/16, i%16+1, s);
-	}
-}
-
 
 void COTPWriterProDlg::OnBnClickedButtonBlankCheck()
 {
-	ExecuteMemCmd(HS_MEM_BLKCHK);
+	ExecuteMemCmd(HS__MEM__BLKCHK);
 }
 
 
 void COTPWriterProDlg::OnBnClickedButtonEnterProgramMode()
 {
-	ExecuteMemCmd(HS_MEM_ENTER);
+	ExecuteMemCmd(HS__MEM__ENTER);
 }
 
 
 void COTPWriterProDlg::OnBnClickedButtonExitProgramMode()
 {
-	ExecuteMemCmd(HS_MEM_EXIT);
+	ExecuteMemCmd(HS__MEM__EXIT);
 }
 
 
 void COTPWriterProDlg::OnBnClickedButtonTestBlankCheck()
 {
-	ExecuteMemCmd(HS_MEM_TEST_BLKCHK);
+	ExecuteMemCmd(HS__MEM__TEST_BLKCHK);
 }
 
 
 void COTPWriterProDlg::OnBnClickedButtonTestDec()
 {
-	ExecuteMemCmd(HS_MEM_TEST_DEC);
+	ExecuteMemCmd(HS__MEM__TEST_DEC);
 }
 
 
 void COTPWriterProDlg::OnBnClickedButtonTestWR()
 {
-	ExecuteMemCmd(HS_MEM_TEST_WR);
+	ExecuteMemCmd(HS__MEM__TEST_WR);
 }
 
 
 void COTPWriterProDlg::OnBnClickedButtonChipReset()
 {
-	ExecuteMemCmd(HS_MEM_RESET);
+	ExecuteMemCmd(HS__MEM__RESET);
+}
+
+
+void COTPWriterProDlg::OnBnClickedButtonInBuffer()
+{
+	UINT8 data = GetDataToFillBuffer();
+    UINT addr;
+    UINT dataLen;
+
+    if (m_chkFillBufferAll.GetCheck())
+    {
+        addr = 0;
+        dataLen = m_bufDataLength;
+    }
+    else
+    {
+        addr = GetStartAddress();
+        dataLen = GetDataLength();
+    }
+
+    memset(m_buf+addr, data, dataLen);
+    memset(m_bufFlag+addr, 1, dataLen);
+
+    if (m_bufDataLength < addr+dataLen)
+        m_bufDataLength = addr + dataLen;
+
+    UpdateBufferDisplay(addr, dataLen);
+}
+
+int COTPWriterProDlg::SendAndWaitToReceiveReport( HIDREPORT_t &r, hid_device * handle )
+{
+    int res = 0;
+    r.packet.print();
+    res = SendReport(handle, r);
+    if (res < 0) 
+        return res;
+    
+    res = ReceiveReport(handle, r);
+    r.packet.print();
+    if (res < 0) 
+        return res;
+
+    return res;
+}
+
+void COTPWriterProDlg::UpdateBufferDisplay( unsigned int addr, unsigned int length )
+{
+    CString s;
+    for (int i = addr; i < addr+length ; i++)
+    {
+        if (m_bufFlag[i]) 
+            s.Format(_T("%02X"), m_buf[i]);
+        else 
+            s.Empty();
+
+        m_ctrlListBuffer.SetItemText(i/16, i%16 + 1, s);
+    }
+}
+
+
+void COTPWriterProDlg::OnBnClickedButtonOption()
+{
+    COption o;
+    o.m_bEnableConsoleOutput = m_option.bEnableConsoleOutput;
+    o.m_bEnableIncontinuousCell = m_option.bEnableIncontinuousCell;
+    o.m_nPacketDataLength = m_option.nPacketDataLength;
+
+    if (o.DoModal() == IDCANCEL)
+    {
+        return;
+    }
+
+    m_option.bEnableConsoleOutput = o.m_bEnableConsoleOutput;
+    m_option.bEnableIncontinuousCell = o.m_bEnableIncontinuousCell;
+    m_option.nPacketDataLength = o.m_nPacketDataLength;
+
+    if (m_option.bEnableConsoleOutput)
+        hgzOpenConsole();
+    else
+        hgzCloseConsole();
+}
+
+void COTPWriterProDlg::SetBuffer( unsigned int addr, long long lenth, unsigned char val, BOOL valid )
+{
+    memset(m_buf+addr, val, lenth);
+    
+    if (valid)
+        memset(m_bufFlag+addr, 1, lenth);
+    else
+        memset(m_bufFlag+addr, 0, lenth);
+}
+
+void COTPWriterProDlg::ClearBuffer( UINT32 addr, UINT64 length )
+{
+    UINT64 nl;
+    
+    if (m_bufDataLength <= addr)
+        return;
+    else if (m_bufDataLength <= addr+length)
+    {
+        nl = m_bufDataLength - addr;
+        m_bufDataLength = addr;
+    }
+    else
+    {
+        nl = length;
+    }
+    
+    memset(m_buf+addr, 0, nl);
+    memset(m_bufFlag+addr, 0, nl);
+}
+
+void COTPWriterProDlg::OnBnClickedButtonClearBuffer()
+{
+    UINT32 addr;
+    UINT64 dataLen;
+
+    if (m_chkClearBufferAll.GetCheck())
+    {
+        addr = 0;
+        dataLen = m_bufDataLength;
+    }
+    else
+    {
+        addr = GetStartAddress();
+        dataLen = GetDataLength();
+    }
+
+    ClearBuffer(addr, dataLen);
+    UpdateBufferDisplay(addr, dataLen);
+}
+
+UINT8 COTPWriterProDlg::GetDataToFillBuffer()
+{
+    CString str;
+    m_cbDataToFill.GetWindowText(str);
+    if (!str.IsEmpty())
+    {
+        UINT x;
+        _stscanf_s(str, _T("%x"), &x);
+        return (UINT8)x;
+    }
+    else
+        return 0;;
 }

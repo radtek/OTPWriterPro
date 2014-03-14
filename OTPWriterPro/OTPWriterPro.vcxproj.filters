@@ -69,6 +69,9 @@
     <ClInclude Include="hgz\HexFile.h">
       <Filter>hgz</Filter>
     </ClInclude>
+    <ClInclude Include="Option.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="OTPWriterPro.cpp">
@@ -100,6 +103,9 @@
     </ClCompile>
     <ClCompile Include="hgz\HexFile.cpp">
       <Filter>hgz</Filter>
+    </ClCompile>
+    <ClCompile Include="Option.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -39,6 +39,20 @@ int CHgzComboBox::AddStringWithoutDuplication(LPCTSTR lpszString) // 1°¢¥Û–°–¥≤ª
 	return FALSE;
 }
 
+//int CHgzComboBox::GetWindowHex(unsigned char &Hex)
+//{
+//    CString str;
+//    GetWindowText(str);
+//    if (!str.IsEmpty())
+//    {
+//        UINT x;
+//        _stscanf_s(str, _T("%x"), &x);
+//        Hex = (UINT8)x;
+//        return 1;
+//    }
+//    else
+//        return 0;
+//}
 
 int CHgzComboBox::GetWindowHex(unsigned char * pHex)
 {

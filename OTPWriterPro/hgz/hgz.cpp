@@ -35,7 +35,8 @@ BOOL hgzExtractSubString(				// 成功返回 TRUE
 		(std::tstring)_T(" "),						// 替换字符串
 		std::regex_constants::match_any				// 查找及替换规则
 		);
-	const TCHAR *tmp1 = new TCHAR[32];
+	//const TCHAR *tmp1 = new TCHAR[32];
+	const TCHAR *tmp1;
 		
 	// 如何判断 std::tstring 为空？
 	// NULL 和 "" （空字符串）的区别？
@@ -43,6 +44,7 @@ BOOL hgzExtractSubString(				// 成功返回 TRUE
 	// 暂以长度是否为 0 来判断。
 	tmp1 = tmp.length() == 0 ? NULL : tmp.c_str();
 	BOOL x = AfxExtractSubString(rString, tmp1, iSubString, _T(' '));
+	//delete [] tmp1;
 	return x;
 }
 
@@ -331,20 +333,30 @@ void DeleteSpaceFromString( CString &s )
 	}
 }
 
-__int64 BinCString2HexInt( CString &b )
+__int64 BinCString2HexInt( const CString &s )
 {
 	__int64 h = 0;
 
-	int len = b.GetLength();
+	int len = s.GetLength();
 	for (int i = 0; i < len; i++) {
-		h += (b[len-1-i] == _T('1')) ? (1<<i) : 0;
+		h += (s[len-1-i] == _T('1')) ? (1<<i) : 0;
 		//_tprintf_s(_T("\n%x"), h);
 	}
 
 	return h;
 }
 
+unsigned __int64 BinCString2UInt( const CString &s )
+{
+	unsigned __int64 h = 0;
 
+	int len = s.GetLength();
+	for (int i = 0; i < len; i++) {
+		h += (s[len-1-i] == _T('1')) ? (1<<i) : 0;
+		//_tprintf_s(_T("\n%x"), h);
+	}
+	return h;
+}
 BOOL hgzOpenConsole()
 {
 	AllocConsole();  
