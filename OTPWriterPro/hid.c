@@ -890,29 +890,29 @@ int __cdecl main(int argc, char* argv[])
 	/* Open the device. */
 	int handle = open(VendorID, ProductID, L"12345");
 	if (handle < 0)
-		printf("unable to open device\n");
+		_tprintf(_T("unable to open device\n"));
 
 
 	/* Toggle LED (cmd 0x80) */
 	buf[1] = 0x80;
 	res = write(handle, buf, 65);
 	if (res < 0)
-		printf("Unable to write()\n");
+		_tprintf(_T("Unable to write()\n"));
 
 	/* Request state (cmd 0x81) */
 	buf[1] = 0x81;
 	write(handle, buf, 65);
 	if (res < 0)
-		printf("Unable to write() (2)\n");
+		_tprintf(_T("Unable to write() (2)\n"));
 
 	/* Read requested state */
 	read(handle, buf, 65);
 	if (res < 0)
-		printf("Unable to read()\n");
+		_tprintf(_T("Unable to read()\n"));
 
 	/* Print out the returned buffer. */
 	for (int i = 0; i < 4; i++)
-		printf("buf[%d]: %d\n", i, buf[i]);
+		_tprintf(_T("buf[%d]: %d\n"), i, buf[i]);
 
 	return 0;
 }

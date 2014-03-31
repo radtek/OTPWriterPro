@@ -274,13 +274,13 @@ void COTPWriterProDlg::OnBnClickedButton1()
 	devs = hid_enumerate(0x0, 0x0);
 	cur_dev = devs;	
 	while (cur_dev) {
-		printf("Device Found\n  type: %04hx %04hx\n  path: %s\n  serial_number: %ls", cur_dev->vendor_id, cur_dev->product_id, cur_dev->path, cur_dev->serial_number);
-		printf("\n");
-		printf("  Manufacturer: %ls\n", cur_dev->manufacturer_string);
-		printf("  Product:      %ls\n", cur_dev->product_string);
-		printf("  Release:      %hx\n", cur_dev->release_number);
-		printf("  Interface:    %d\n",  cur_dev->interface_number);
-		printf("\n");
+		_tprintf(_T("Device Found\n  type: %04hx %04hx\n  path: %s\n  serial_number: %ls"), cur_dev->vendor_id, cur_dev->product_id, cur_dev->path, cur_dev->serial_number);
+		_tprintf(_T("\n"));
+		_tprintf(_T("  Manufacturer: %ls\n"), cur_dev->manufacturer_string);
+		_tprintf(_T("  Product:      %ls\n"), cur_dev->product_string);
+		_tprintf(_T("  Release:      %hx\n"), cur_dev->release_number);
+		_tprintf(_T("  Interface:    %d\n"),  cur_dev->interface_number);
+		_tprintf(_T("\n"));
 		cur_dev = cur_dev->next;
 	}
 	hid_free_enumeration(devs);
@@ -292,7 +292,7 @@ void COTPWriterProDlg::OnBnClickedButton1()
 	//handle = hid_open(0x4d8, 0x3f, NULL);
 	handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
 	if (!handle) {
-		printf("unable to open device\n");
+		_tprintf(_T("unable to open device\n"));
 		return;
 	}
 
@@ -300,30 +300,30 @@ void COTPWriterProDlg::OnBnClickedButton1()
 	wstr[0] = 0x0000;
 	res = hid_get_manufacturer_string(handle, wstr, MAX_STR);
 	if (res < 0)
-		printf("Unable to read manufacturer string\n");
-	printf("Manufacturer String: %ls\n", wstr);
+		_tprintf(_T("Unable to read manufacturer string\n"));
+	_tprintf(_T("Manufacturer String: %ls\n"), wstr);
 
 	// Read the Product String
 	wstr[0] = 0x0000;
 	res = hid_get_product_string(handle, wstr, MAX_STR);
 	if (res < 0)
-		printf("Unable to read product string\n");
-	printf("Product String: %ls\n", wstr);
+		_tprintf(_T("Unable to read product string\n"));
+	_tprintf(_T("Product String: %ls\n"), wstr);
 
 	// Read the Serial Number String
 	wstr[0] = 0x0000;
 	res = hid_get_serial_number_string(handle, wstr, MAX_STR);
 	if (res < 0)
-		printf("Unable to read serial number string\n");
-	printf("Serial Number String: (%d) %ls", wstr[0], wstr);
-	printf("\n");
+		_tprintf(_T("Unable to read serial number string\n"));
+	_tprintf(_T("Serial Number String: (%d) %ls"), wstr[0], wstr);
+	_tprintf(_T("\n"));
 
 	// Read Indexed String 1
 	wstr[0] = 0x0000;
 	res = hid_get_indexed_string(handle, 1, wstr, MAX_STR);
 	if (res < 0)
-		printf("Unable to read indexed string 1\n");
-	printf("Indexed String 1: %ls\n", wstr);
+		_tprintf(_T("Unable to read indexed string 1\n"));
+	_tprintf(_T("Indexed String 1: %ls\n"), wstr);
 
 	// Set the hid_read() function to be non-blocking.
 	hid_set_nonblocking(handle, 1);
@@ -345,7 +345,7 @@ void COTPWriterProDlg::OnBnClickedButton1()
 	buf[4] = 0x00;
 	res = hid_send_feature_report(handle, buf, 17);
 	if (res < 0) {
-		printf("Unable to send a feature report.\n");
+		_tprintf(_T("Unable to send a feature report.\n"));
 	}
 
 	memset(buf,0,sizeof(buf));
@@ -354,15 +354,15 @@ void COTPWriterProDlg::OnBnClickedButton1()
 	buf[0] = 0x2;
 	res = hid_get_feature_report(handle, buf, sizeof(buf));
 	if (res < 0) {
-		printf("Unable to get a feature report.\n");
-		printf("%ls", hid_error(handle));
+		_tprintf(_T("Unable to get a feature report.\n"));
+		_tprintf(_T("%ls"), hid_error(handle));
 	}
 	else {
 		// Print out the returned buffer.
-		printf("Feature Report\n   ");
+		_tprintf(_T("Feature Report\n   "));
 		for (i = 0; i < res; i++)
-			printf("%02hhx ", buf[i]);
-		printf("\n");
+			_tprintf(_T("%02hhx "), buf[i]);
+		_tprintf(_T("\n"));
 	}
 
 	memset(buf,0,sizeof(buf));
@@ -372,8 +372,8 @@ void COTPWriterProDlg::OnBnClickedButton1()
 	buf[1] = 0x80;
 	res = hid_write(handle, buf, 17);
 	if (res < 0) {
-		printf("Unable to write()\n");
-		printf("Error: %ls\n", hid_error(handle));
+		_tprintf(_T("Unable to write()\n"));
+		_tprintf(_T("Error: %ls\n"), hid_error(handle));
 	}
 
 
@@ -382,30 +382,7 @@ void COTPWriterProDlg::OnBnClickedButton1()
 	buf[1] = 0x81;
 	hid_write(handle, buf, 17);
 	if (res < 0)
-		printf("Unable to write() (2)\n");
-
-	// Read requested state. hid_read() has been set to be
-	// non-blocking by the call to hid_set_nonblocking() above.
-	// This loop demonstrates the non-blocking nature of hid_read().
-	/*res = 0;
-	while (res == 0) {
-		res = hid_read(handle, buf, sizeof(buf));
-		if (res == 0)
-			printf("waiting...\n");
-		if (res < 0)
-			printf("Unable to read()\n");
-#ifdef WIN32
-		Sleep(500);
-#else
-		usleep(500*1000);
-#endif
-	}
-
-	printf("Data read:\n   ");
-	// Print out the returned buffer.
-	for (i = 0; i < res; i++)
-		printf("%02hhx ", buf[i]);
-	printf("\n");*/
+		_tprintf(_T("Unable to write() (2)\n"));
 
 	hid_close(handle);
 
@@ -521,7 +498,7 @@ hid_device * COTPWriterProDlg::Hid_OpenTopLevelCollection( unsigned short vendor
 	//handle = hid_open(0x4d8, 0x3f, NULL);
 	handle = hid_open(vendorID, productID, NULL);
 	if (!handle) {
-		printf("unable to open device\n");
+		_tprintf(_T("unable to open device\n"));
 		return handle;
 	}
 
@@ -529,23 +506,23 @@ hid_device * COTPWriterProDlg::Hid_OpenTopLevelCollection( unsigned short vendor
 	wstr[0] = 0x0000;
 	res = hid_get_manufacturer_string(handle, wstr, MAX_STR);
 	if (res < 0)
-		printf("Unable to read manufacturer string\n");
-	printf("Manufacturer String: %ls\n", wstr);
+		_tprintf(_T("Unable to read manufacturer string\n"));
+	_tprintf(_T("Manufacturer String: %ls\n"), wstr);
 
 	// Read the Product String
 	wstr[0] = 0x0000;
 	res = hid_get_product_string(handle, wstr, MAX_STR);
 	if (res < 0)
-		printf("Unable to read product string\n");
-	printf("Product String: %ls\n", wstr);
+		_tprintf(_T("Unable to read product string\n"));
+	_tprintf(_T("Product String: %ls\n"), wstr);
 
 	// Read the Serial Number String
 	wstr[0] = 0x0000;
 	res = hid_get_serial_number_string(handle, wstr, MAX_STR);
 	if (res < 0)
-		printf("Unable to read serial number string\n");
-	printf("Serial Number String: (%d) %ls", wstr[0], wstr);
-	printf("\n");
+		_tprintf(_T("Unable to read serial number string\n"));
+	_tprintf(_T("Serial Number String: (%d) %ls"), wstr[0], wstr);
+	_tprintf(_T("\n"));
 
 	// Set the hid_read() function to be non-blocking.
 	hid_set_nonblocking(handle, 1);
@@ -565,14 +542,14 @@ void COTPWriterProDlg::OnTimer(UINT_PTR nIDEvent)
 			HID_REPORT_t r = {0};
 			hid_device *handle = handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
 			if (!handle) {
-				printf("unable to open device\n");
+				_tprintf(_T("unable to open device\n"));
 				return;
 			}
 
 			int res = hid_read(handle, (unsigned char *)&r.packet, sizeof(r.packet));
 			if (res < 0) {
-				printf("Unable to read().\n");
-				printf("Error: %ls\n", hid_error(handle));
+				_tprintf(_T("Unable to read().\n"));
+				_tprintf(_T("Error: %ls\n"), hid_error(handle));
 			}
 
 			hid_close(handle); /* Free handle objects. */
@@ -580,37 +557,7 @@ void COTPWriterProDlg::OnTimer(UINT_PTR nIDEvent)
 		}
 		break;
 	
-	/*case 2:
-		{
-			HID_REPORT_t r = {0};
-			hid_device *handle = handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
-			if (!handle) {
-				printf("unable to open device\n");
-				return;
-			}
 
-			int res = hid_read(handle, (unsigned char *)&r, sizeof(r));
-			if (res < 0) {
-				printf("Unable to read().\n");
-				printf("Error: %ls\n", hid_error(handle));
-			}
-
-			if (r.packet.m_pkt.memPkt.datalen == 0) {
-				KillTimer(2);
-				//SaveMemFile();
-			}
-			else {
-				memcpy(&rbuf[rbuf_num], r.packet.m_pkt.memPkt.data, r.packet.m_pkt.memPkt.datalen);
-				rbuf_num += r.packet.m_pkt.memPkt.datalen;
-			}
-			
-			
-			
-			
-			hid_close(handle); / * Free handle objects. * /
-			hid_exit(); / * Free static HIDAPI objects. * /
-		}
-		break;*/
 	
 	default:
 		break;
@@ -790,16 +737,13 @@ void COTPWriterProDlg::OnBnClickedButtonWrite()
 	if (process_state != process_state_idle) return;
 	process_state = process_state_write;
 
-
-#if TEST_ON == 0
 	// Open the device using the VID, PID, and optionally the Serial number.
 	hid_device *handle = handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
 	if (!handle) {
         process_state = process_state_idle;
-        printf("unable to open device\n");
+        _tprintf(_T("unable to open device\n"));
 		return;
 	}
-#endif
 
 	// Start Write
 	HID_REPORT_t r;
@@ -823,21 +767,17 @@ void COTPWriterProDlg::OnBnClickedButtonWrite()
 		// build the MemWrite packet.
 		m_buf_num += BuildMemWriteReport(r, m_buf, start_addr+m_buf_num, length-m_buf_num, packet_data_length);
 
-#if TEST_ON == 0
         if (SendAndWaitToReceiveReport(r, handle) < 0) 
             break;
-#endif
 		m_ctrlProgress.SetPos(m_buf_num*100/length);
 	}
     // Send the terminating data-empty packet.
     BuildMemWriteReport(r, m_buf, start_addr+m_buf_num, length-m_buf_num, packet_data_length);
     SendAndWaitToReceiveReport(r, handle);
 
-    OnBnClickedButtonWrite_Label:
-#if TEST_ON == 0
+OnBnClickedButtonWrite_Label:
 	hid_close(handle); /* Free handle objects. */
 	hid_exit(); /* Free static HIDAPI objects. */
-#endif
 
 	process_state = process_state_idle;
 }
@@ -847,26 +787,19 @@ void COTPWriterProDlg::OnBnClickedButtonRead()
 	if (process_state != process_state_idle) return;
 	process_state = process_state_read;
 
-#if TEST_ON == 0
 	// Open the device using the VID, PID, and optionally the Serial number.
 	hid_device *handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
 	if (!handle) {
         process_state = process_state_idle;
-        printf("Unable to open device\n");
+        _tprintf(_T("Unable to open device\n"));
 		return;
 	}
-#else
-	hid_device *handle = 0;
-#endif
 
 	HID_REPORT_t r;
 	MemRead(handle, r, GetStartAddress(), GetDataLength());
 
-#if TEST_ON == 0
 	hid_close(handle); /* Free handle objects. */
 	hid_exit(); /* Free static HIDAPI objects. */
-#endif
-
 
 	UpdateBufferDisplay(GetStartAddress(), GetDataLength());
 	process_state = process_state_idle;
@@ -885,19 +818,15 @@ void COTPWriterProDlg::OnBnClickedButtonVerify()
 
 
 	// open HID device
-#if TEST_ON == 0
 	// Open the device using the VID, PID, and optionally the Serial number.
 	hid_device *handle = handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
 	if (!handle) {
         process_state = process_state_idle;
-        printf("unable to open device\n");
+        _tprintf(_T("unable to open device\n"));
 		return;
 	}
-#else
-	hid_device *handle = 0;
-#endif
 
-	unsigned int start_addr = GetStartAddress();
+    unsigned int start_addr = GetStartAddress();
 	unsigned int total_length = GetDataLength();
 	total_length = total_length <= m_bufDataLength ? total_length : m_bufDataLength;
 	unsigned int addr = start_addr;
@@ -929,10 +858,8 @@ void COTPWriterProDlg::OnBnClickedButtonVerify()
 	_tprintf(_T("Verification is successful."));
 
 OnBnClickedButtonVerify_local_exit:
-#if TEST_ON == 0
 	hid_close(handle); /* Free handle objects. */
 	hid_exit(); /* Free static HIDAPI objects. */
-#endif
 
 	process_state = process_state_idle;
 }
@@ -1107,16 +1034,16 @@ int COTPWriterProDlg::ReceiveReport( hid_device * handle, HID_REPORT_t &r )
 	// non-blocking by the call to hid_set_nonblocking() above.
 	// This loop demonstrates the non-blocking nature of hid_read().
 	int res = 0;
-	printf("Receiving Report ...\n");
+	_tprintf(_T("Receiving Report ...\n"));
 	while (res == 0) {
 		res = hid_read(handle, (unsigned char *)&r.packet, sizeof(r.packet));
 // 		if (res == 0)
-// 			printf(".");
+// 			_tprintf(_T("."));
 		if (res < 0)
-			printf("Unable to read()\n");
+			_tprintf(_T("Unable to read()\n"));
 		//Sleep(500);
 	}
-	printf("Received data: ");
+	_tprintf(_T("Received data: "));
     r.packet.print(FALSE);
 	
     /*if (r.packet.m_pkt.memPkt.cmdL1 == HS__MEM 
@@ -1159,8 +1086,8 @@ int COTPWriterProDlg::SendReport( hid_device * handle, HID_REPORT_t &r )
 	}*/
 
 	if (res < 0) {
-		printf("Unable to send command: %s\n", s);
-		printf("Error: %ls\n", hid_error(handle));
+		_tprintf(_T("Unable to send command: %s\n"), s);
+		_tprintf(_T("Error: %ls\n"), hid_error(handle));
 		return -1;
 	}
 
@@ -1198,7 +1125,6 @@ unsigned int COTPWriterProDlg::MemRead( hid_device * handle, HID_REPORT_t &r, un
 	BuildMemReadReport(r, startAddr, length);
 
     long long receivedNum = 0;
-#if TEST_ON == 0
 	// Start Write
 		int res = 0;
 		res = SendReport(handle, r);
@@ -1229,7 +1155,6 @@ unsigned int COTPWriterProDlg::MemRead( hid_device * handle, HID_REPORT_t &r, un
 			}
 			m_ctrlProgress.SetPos(receivedNum*100/length);
 		}
-#endif
         return (unsigned int)receivedNum;
 }
 
@@ -1277,12 +1202,11 @@ afx_msg void COTPWriterProDlg::ExecuteMemCmd( unsigned char memCmd )
 		return;
 	}
 
-#if TEST_ON == 0
 	// Open the device using the VID, PID, and optionally the Serial number.
 	hid_device *handle = handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
 	if (!handle) {
         process_state = process_state_idle;
-        printf("Unable to open device\n");
+        _tprintf(_T("Unable to open device\n"));
 		return;
 	}
 
@@ -1298,7 +1222,6 @@ afx_msg void COTPWriterProDlg::ExecuteMemCmd( unsigned char memCmd )
 
 	hid_close(handle); /* Free handle objects. */
 	hid_exit(); /* Free static HIDAPI objects. */
-#endif
 
 	process_state = process_state_idle;
 }
@@ -1315,12 +1238,11 @@ afx_msg void COTPWriterProDlg::ExecuteCmd( unsigned char cmd )
         return;
     }
 
-#if TEST_ON == 0
     // Open the device using the VID, PID, and optionally the Serial number.
     hid_device *handle = handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
     if (!handle) {
         process_state = process_state_idle;
-        printf("Unable to open device\n");
+        _tprintf(_T("Unable to open device\n"));
         return;
     }
 
@@ -1336,7 +1258,6 @@ afx_msg void COTPWriterProDlg::ExecuteCmd( unsigned char cmd )
 
     hid_close(handle); /* Free handle objects. */
     hid_exit(); /* Free static HIDAPI objects. */
-#endif
 
     process_state = process_state_idle;
 }
