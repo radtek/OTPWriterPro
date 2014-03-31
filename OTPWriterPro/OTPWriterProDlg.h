@@ -97,7 +97,7 @@ public:
 	typedef struct {
 		unsigned char reportID;
 		CPacket packet;
-	} HIDREPORT_t;
+	} HID_REPORT_t;
 
 
 	enum _FLAG_t {
@@ -117,14 +117,14 @@ public:
 
 	afx_msg void OnBnClickedButtonWrite();
 
-    int SendAndWaitToReceiveReport( HIDREPORT_t &r, hid_device * handle );
+    int SendAndWaitToReceiveReport( HID_REPORT_t &r, hid_device * handle );
 
-	int SendReport( hid_device * handle, HIDREPORT_t &r );
+	int SendReport( hid_device * handle, HID_REPORT_t &r );
 
-	int ReceiveReport( hid_device * handle, HIDREPORT_t &r );
+	int ReceiveReport( hid_device * handle, HID_REPORT_t &r );
 
-	int BuildMemWriteReport( HIDREPORT_t &r, unsigned char *buf, unsigned int addr, unsigned int length, unsigned int packetDataLength, unsigned int reportID = 0 );
-	BOOL BuildMemReadReport( HIDREPORT_t &r, unsigned int addr, unsigned int length, unsigned int reportID = 0 );
+	int BuildMemWriteReport( HID_REPORT_t &r, unsigned char *buf, unsigned int addr, unsigned int length, unsigned int packetDataLength, unsigned int reportID = 0 );
+	BOOL BuildMemReadReport( HID_REPORT_t &r, unsigned int addr, unsigned int length, unsigned int reportID = 0 );
 
 	afx_msg void OnBnClickedButtonOpenFile();
 
@@ -144,13 +144,13 @@ public:
 
 	CHgzListCtrl m_ctrlListBuffer;
 
-	unsigned int MemRead( hid_device * handle, HIDREPORT_t &r, unsigned int startAddr, unsigned int length );
+	unsigned int MemRead( hid_device * handle, HID_REPORT_t &r, unsigned int startAddr, unsigned int length );
 
 protected:
 	afx_msg LRESULT OnLvmItemChanged(WPARAM wParam, LPARAM lParam);
 	unsigned int GetDataLength();
-	int CompareMemData( HIDREPORT_t & r, unsigned char *wbuf );
-	BOOL BuildMemCmdReport( HIDREPORT_t &r, unsigned char memCmd, unsigned int reportID=0 );
+	int CompareMemData( HID_REPORT_t & r, unsigned char *wbuf );
+	BOOL BuildMemCmdReport( HID_REPORT_t &r, unsigned char memCmd, unsigned int reportID = 0 );
 	void UpdateBufferDisplay( unsigned int addr, unsigned int length );
 public:
 	afx_msg void OnBnClickedButtonBlankCheck();
@@ -166,8 +166,15 @@ public:
     void ClearBuffer(UINT32 addr, UINT64 length);
     afx_msg void OnBnClickedButtonClearBuffer();
     UINT8 GetDataToFillBuffer();
+    BOOL BuildCmdReport( HID_REPORT_t &r, unsigned char cmd, unsigned int reportID =0 );
     CButton m_chkFillBufferAll;
     CButton m_chkClearBufferAll;
+
+    HS_CHIP_TYPE_t m_ChipType;
+    afx_msg void OnCbnSelchangeComboSelectChipType();
+    afx_msg void OnBnClickedButtonDetectChipType();
+    afx_msg void ExecuteCmd( unsigned char cmd );
+    afx_msg void OnBnClickedButtonVersionNum();
 };
 
 

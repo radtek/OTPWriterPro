@@ -85,7 +85,7 @@ public:
 #pragma pack()
 
 public:
-	void print(BOOL printOn = TRUE);
+	void print(BOOL bDirectionDown, BOOL printOn = TRUE);
 	//friend ostream& operator << (ostream& os, const CPacket& packet);
 
 	void setup(unsigned char pid);

@@ -106,6 +106,9 @@ BEGIN_MESSAGE_MAP(COTPWriterProDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON18, &COTPWriterProDlg::OnBnClickedButtonInBuffer)
     ON_BN_CLICKED(IDC_BUTTON19, &COTPWriterProDlg::OnBnClickedButtonOption)
     ON_BN_CLICKED(IDC_BUTTON20, &COTPWriterProDlg::OnBnClickedButtonClearBuffer)
+    ON_CBN_SELCHANGE(IDC_COMBO1, &COTPWriterProDlg::OnCbnSelchangeComboSelectChipType)
+    ON_BN_CLICKED(IDC_BUTTON3, &COTPWriterProDlg::OnBnClickedButtonDetectChipType)
+    ON_BN_CLICKED(IDC_BUTTON21, &COTPWriterProDlg::OnBnClickedButtonVersionNum)
 END_MESSAGE_MAP()
 
 
@@ -177,12 +180,13 @@ BOOL COTPWriterProDlg::OnInitDialog()
 
 
     // Option
-    m_option.bEnableConsoleOutput = TRUE;
+    m_option.bEnableConsoleOutput = FALSE;
     m_option.bEnableIncontinuousCell = FALSE;
     m_option.nPacketDataLength = 52;
     if (m_option.bEnableConsoleOutput)	
         hgzOpenConsole();
 
+    m_ChipType = HS__CMD__CHIP_TYPE__OTP__HS6206;
 
 
 	// Start a periodic read IRP to timely receive datas from device.
@@ -558,7 +562,7 @@ void COTPWriterProDlg::OnTimer(UINT_PTR nIDEvent)
 	{
 	case 1:
 		{
-			HIDREPORT_t r = {0};
+			HID_REPORT_t r = {0};
 			hid_device *handle = handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
 			if (!handle) {
 				printf("unable to open device\n");
@@ -578,7 +582,7 @@ void COTPWriterProDlg::OnTimer(UINT_PTR nIDEvent)
 	
 	/*case 2:
 		{
-			HIDREPORT_t r = {0};
+			HID_REPORT_t r = {0};
 			hid_device *handle = handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
 			if (!handle) {
 				printf("unable to open device\n");
@@ -791,13 +795,14 @@ void COTPWriterProDlg::OnBnClickedButtonWrite()
 	// Open the device using the VID, PID, and optionally the Serial number.
 	hid_device *handle = handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
 	if (!handle) {
-		printf("unable to open device\n");
+        process_state = process_state_idle;
+        printf("unable to open device\n");
 		return;
 	}
 #endif
 
 	// Start Write
-	HIDREPORT_t r;
+	HID_REPORT_t r;
 	unsigned int m_buf_num = 0;
 	unsigned int start_addr = GetStartAddress();
 	unsigned int length = min(GetDataLength(), m_bufDataLength);
@@ -846,14 +851,15 @@ void COTPWriterProDlg::OnBnClickedButtonRead()
 	// Open the device using the VID, PID, and optionally the Serial number.
 	hid_device *handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
 	if (!handle) {
-		printf("Unable to open device\n");
+        process_state = process_state_idle;
+        printf("Unable to open device\n");
 		return;
 	}
 #else
 	hid_device *handle = 0;
 #endif
 
-	HIDREPORT_t r;
+	HID_REPORT_t r;
 	MemRead(handle, r, GetStartAddress(), GetDataLength());
 
 #if TEST_ON == 0
@@ -883,7 +889,8 @@ void COTPWriterProDlg::OnBnClickedButtonVerify()
 	// Open the device using the VID, PID, and optionally the Serial number.
 	hid_device *handle = handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
 	if (!handle) {
-		printf("unable to open device\n");
+        process_state = process_state_idle;
+        printf("unable to open device\n");
 		return;
 	}
 #else
@@ -895,7 +902,7 @@ void COTPWriterProDlg::OnBnClickedButtonVerify()
 	total_length = total_length <= m_bufDataLength ? total_length : m_bufDataLength;
 	unsigned int addr = start_addr;
 	unsigned int length = 16;
-	HIDREPORT_t r;
+	HID_REPORT_t r;
 	int res = 0;
 	// loop
 	for (int i = 0; i < m_bufDataLength; i++, addr += length)
@@ -938,7 +945,9 @@ void COTPWriterProDlg::OnBnClickedButtonEncrypt()
 
 void COTPWriterProDlg::OnBnClickedButtonErase()
 {
-	return ExecuteMemCmd(HS__MEM__ERASE_PAGE);
+	return m_ctrlEraseAll.GetCheck() ? 
+          ExecuteMemCmd(HS__MEM__ERASE_ALL) 
+        : ExecuteMemCmd(HS__MEM__ERASE_PAGE);
 }
 
 void COTPWriterProDlg::PrintCurrentTime()
@@ -949,7 +958,7 @@ void COTPWriterProDlg::PrintCurrentTime()
 	EditCtrlOutput(s);
 }
 
-int COTPWriterProDlg::BuildMemWriteReport( HIDREPORT_t &r, unsigned char *buf, unsigned int addr, unsigned int length, unsigned int packetDataLength, unsigned int reportID /*= 0 */ )
+int COTPWriterProDlg::BuildMemWriteReport( HID_REPORT_t &r, unsigned char *buf, unsigned int addr, unsigned int length, unsigned int packetDataLength, unsigned int reportID /*= 0 */ )
 {
 	int datalen = length <= packetDataLength ? length : packetDataLength;
 	
@@ -965,12 +974,10 @@ int COTPWriterProDlg::BuildMemWriteReport( HIDREPORT_t &r, unsigned char *buf, u
 	hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.memPkt.addr, 4);
 	hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.memPkt.dataLen, 4);
 
-	//r.packet.print();
-	
 	return datalen;
 }
 
-BOOL COTPWriterProDlg::BuildMemReadReport( HIDREPORT_t &r, unsigned int addr, unsigned int length, unsigned int reportID /*= 0 */ )
+BOOL COTPWriterProDlg::BuildMemReadReport( HID_REPORT_t &r, unsigned int addr, unsigned int length, unsigned int reportID /*= 0 */ )
 {
 	r.reportID = reportID;
 	r.packet.m_pkt.memPkt.len = 12;
@@ -983,12 +990,10 @@ BOOL COTPWriterProDlg::BuildMemReadReport( HIDREPORT_t &r, unsigned int addr, un
 	hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.memPkt.addr, 4);
 	hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.memPkt.dataLen, 4);
 
-	//r.packet.print();
-
 	return TRUE;
 }
 
-BOOL COTPWriterProDlg::BuildMemCmdReport( HIDREPORT_t &r, unsigned char memCmd, unsigned int reportID/*=0 */ )
+BOOL COTPWriterProDlg::BuildMemCmdReport( HID_REPORT_t &r, unsigned char memCmd, unsigned int reportID/*=0 */ )
 {
 	r.reportID = reportID;
 	r.packet.m_pkt.cmdPkt.len = sizeof(CPacket::HS_CMD_PACKET_t);
@@ -1021,15 +1026,23 @@ BOOL COTPWriterProDlg::BuildMemCmdReport( HIDREPORT_t &r, unsigned char memCmd, 
 			CString s;
 			m_ctrlErasePageNum.GetWindowText(s);
 			s.Trim();
-			if (s.GetLength() == 0) return FALSE;
+			if (s.IsEmpty()) 
+                return FALSE;
 
-			r.packet.m_pkt.memPkt.addr = stoul(s.GetString(), 0, 10);
-			r.packet.m_pkt.memPkt.dataLen = stoul(s.GetString(), 0, 10);
+            CStringArray arr;
+            hgzExtractSubStrings1(arr, s, _T("-"));
+            if (arr.GetSize() > 2)
+                return FALSE;
+            if (arr.GetSize() == 1)
+                arr.SetAtGrow(1, arr[0].GetString());
+            arr[0].Trim();
+            arr[1].Trim();
+
+			r.packet.m_pkt.memPkt.addr = stoul(arr[0].GetString(), 0, 10);
+			r.packet.m_pkt.memPkt.dataLen = stoul(arr[1].GetString(), 0, 10);
 			
 			hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.memPkt.addr, 4);
 			hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.memPkt.dataLen, 4);			
-
-			r.packet.print();
 
 			return TRUE;
 		}
@@ -1045,14 +1058,44 @@ BOOL COTPWriterProDlg::BuildMemCmdReport( HIDREPORT_t &r, unsigned char memCmd, 
 		break;
 	}
 
-	r.packet.print();
-
 	return TRUE;
 }
 
-int COTPWriterProDlg::ReceiveReport( hid_device * handle, HIDREPORT_t &r )
+BOOL COTPWriterProDlg::BuildCmdReport( HID_REPORT_t &r, unsigned char cmd, unsigned int reportID/*=0 */ )
 {
-	HIDREPORT_t r1;
+    r.reportID = reportID;
+    r.packet.m_pkt.cmdPkt.len = sizeof(CPacket::HS_CMD_PACKET_t);
+    r.packet.m_pkt.cmdPkt.csb = 0;
+    r.packet.m_pkt.cmdPkt.cmdL1 = HS__CMD;
+    r.packet.m_pkt.cmdPkt.cmdL2 = cmd;
+
+    switch (cmd)
+    {
+    case HS__CMD__SET__CHIP_TYPE:
+        {
+            if (m_ChipType == 0) 
+                return FALSE;
+
+            r.packet.m_pkt.valPkt.val = m_ChipType;
+            r.packet.m_pkt.cmdPkt.len += 1;
+            
+            return TRUE;
+        }
+
+    case HS__CMD__GET__CHIP_TYPE:
+    case HS__CMD__GET__FIRMWARE_VERSION:
+            return TRUE;
+
+    default:
+        break;
+    }
+
+    return TRUE;
+}
+
+int COTPWriterProDlg::ReceiveReport( hid_device * handle, HID_REPORT_t &r )
+{
+	HID_REPORT_t r1;
 	r1.reportID = r.reportID;
 	r1.packet.m_pkt.memPkt.cmdL1 = r.packet.m_pkt.memPkt.cmdL1;
 	r1.packet.m_pkt.memPkt.cmdL2 = r.packet.m_pkt.memPkt.cmdL2;
@@ -1074,21 +1117,15 @@ int COTPWriterProDlg::ReceiveReport( hid_device * handle, HIDREPORT_t &r )
 		//Sleep(500);
 	}
 	printf("Received data: ");
-    r.packet.print();
+    r.packet.print(FALSE);
 	
     /*if (r.packet.m_pkt.memPkt.cmdL1 == HS__MEM 
 		&& r.packet.m_pkt.memPkt.cmdL2 == HS__MEM__WRITE
-		&& r.packet.m_pkt.memPkt.datalen == 0)*/
+		&& r.packet.m_pkt.memPkt.dataLen == 0)*/
 	if (r.packet.m_pkt.memPkt.cmdL1 == r1.packet.m_pkt.memPkt.cmdL1 && 
 		r.packet.m_pkt.memPkt.cmdL2 == r1.packet.m_pkt.memPkt.cmdL2)
 	{
 		res = 1;
-		if (   r.packet.m_pkt.memPkt.cmdL1 == HS__MEM 
-			&& r.packet.m_pkt.memPkt.cmdL2 == HS__MEM__READ) 
-		{
-			//hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.memPkt.addr, 4);
-			//hgzRevertByteOrder((unsigned char *)&r.packet.m_pkt.memPkt.datalen, 4);
-		}
 	}
 	else {
 		tcout << endl << _T("Read error!") << endl;
@@ -1098,15 +1135,16 @@ int COTPWriterProDlg::ReceiveReport( hid_device * handle, HIDREPORT_t &r )
 	return res;
 }
 
-int COTPWriterProDlg::SendReport( hid_device * handle, HIDREPORT_t &r )
+int COTPWriterProDlg::SendReport( hid_device * handle, HID_REPORT_t &r )
 {
-	// Set the hid_write() function to be blocking.
+	r.packet.print(TRUE);
+    // Set the hid_write() function to be blocking.
 	hid_set_nonblocking(handle, 1);
 	// send HS__MEM__WRITE packet.
 	int res = hid_write(handle, (unsigned char *)&r, sizeof(r));
 	
-	CString s;
-	switch (r.packet.m_pkt.memPkt.cmdL2)
+	CString s(_T(":)"));
+	/*switch (r.packet.m_pkt.memPkt.cmdL2)
 	{
 	case HS__MEM__WRITE:
 		s = "HS__MEM__WRITE";
@@ -1118,7 +1156,7 @@ int COTPWriterProDlg::SendReport( hid_device * handle, HIDREPORT_t &r )
 
 	default:
 		break;
-	}
+	}*/
 
 	if (res < 0) {
 		printf("Unable to send command: %s\n", s);
@@ -1155,39 +1193,44 @@ afx_msg LRESULT COTPWriterProDlg::OnLvmItemChanged(WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-unsigned int COTPWriterProDlg::MemRead( hid_device * handle, HIDREPORT_t &r, unsigned int startAddr, unsigned int length )
+unsigned int COTPWriterProDlg::MemRead( hid_device * handle, HID_REPORT_t &r, unsigned int startAddr, unsigned int length )
 {
 	BuildMemReadReport(r, startAddr, length);
 
-    long long received_num = 0;
+    long long receivedNum = 0;
 #if TEST_ON == 0
 	// Start Write
 		int res = 0;
-        r.packet.print();
 		res = SendReport(handle, r);
 		if (res < 0) {
 			process_state = process_state_idle;
 			return 0;
 		}
 
+        ClearBuffer(0, m_bufDataLength);
+
 		while (process_state == process_state_read) 
 		{
 			res = ReceiveReport(handle, r);
 			if (res < 0) break;
 
-			unsigned int datalen = hgzRevertByteOrder32(r.packet.m_pkt.memPkt.dataLen);
-			if (datalen == 0) {
+			unsigned int dataLen = hgzRevertByteOrder32(r.packet.m_pkt.memPkt.dataLen);
+            unsigned int addr = hgzRevertByteOrder32(r.packet.m_pkt.memPkt.addr);
+			if (dataLen == 0) {
 				m_ctrlProgress.SetPos(100);
 				break;
 			}
 			else {
-				received_num += datalen;
-				memcpy(m_buf+hgzRevertByteOrder32(r.packet.m_pkt.memPkt.addr), r.packet.m_pkt.memPkt.data, datalen);
+				receivedNum += dataLen;
+				memcpy(m_buf+addr, r.packet.m_pkt.memPkt.data, dataLen);
+                memset(m_bufFlag+addr, 1, dataLen);
+                if (m_bufDataLength < (addr + dataLen))
+                    m_bufDataLength = addr + dataLen;
 			}
-			m_ctrlProgress.SetPos(received_num*100/length);
+			m_ctrlProgress.SetPos(receivedNum*100/length);
 		}
 #endif
-        return (unsigned int)received_num;
+        return (unsigned int)receivedNum;
 }
 
 unsigned int COTPWriterProDlg::GetStartAddress()
@@ -1210,7 +1253,7 @@ unsigned int COTPWriterProDlg::GetDataLength()
 	return length;
 }
 
-int COTPWriterProDlg::CompareMemData( HIDREPORT_t & r, unsigned char *buf )
+int COTPWriterProDlg::CompareMemData( HID_REPORT_t & r, unsigned char *buf )
 {
 	for (int i = 0; i < r.packet.m_pkt.memPkt.dataLen ; i++)
 	{
@@ -1227,7 +1270,7 @@ afx_msg void COTPWriterProDlg::ExecuteMemCmd( unsigned char memCmd )
 	if (process_state != process_state_idle) return;
 	process_state = (enum _FLAG_t)memCmd;
 
-	HIDREPORT_t r;
+	HID_REPORT_t r;
 	
 	if (BuildMemCmdReport(r, memCmd) == FALSE) {
 		process_state = process_state_idle;
@@ -1238,7 +1281,8 @@ afx_msg void COTPWriterProDlg::ExecuteMemCmd( unsigned char memCmd )
 	// Open the device using the VID, PID, and optionally the Serial number.
 	hid_device *handle = handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
 	if (!handle) {
-		printf("Unable to open device\n");
+        process_state = process_state_idle;
+        printf("Unable to open device\n");
 		return;
 	}
 
@@ -1259,6 +1303,43 @@ afx_msg void COTPWriterProDlg::ExecuteMemCmd( unsigned char memCmd )
 	process_state = process_state_idle;
 }
 
+afx_msg void COTPWriterProDlg::ExecuteCmd( unsigned char cmd )
+{
+    if (process_state != process_state_idle) return;
+    process_state = (enum _FLAG_t)cmd;
+
+    HID_REPORT_t r;
+
+    if (BuildCmdReport(r, cmd) == FALSE) {
+        process_state = process_state_idle;
+        return;
+    }
+
+#if TEST_ON == 0
+    // Open the device using the VID, PID, and optionally the Serial number.
+    hid_device *handle = handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
+    if (!handle) {
+        process_state = process_state_idle;
+        printf("Unable to open device\n");
+        return;
+    }
+
+    int res = 0;
+    res = SendReport(handle, r);
+    if (res < 0) {
+
+    }
+    res = ReceiveReport(handle, r);
+    if (res < 0) {
+
+    }
+
+    hid_close(handle); /* Free handle objects. */
+    hid_exit(); /* Free static HIDAPI objects. */
+#endif
+
+    process_state = process_state_idle;
+}
 
 void COTPWriterProDlg::OnBnClickedButtonBlankCheck()
 {
@@ -1328,16 +1409,14 @@ void COTPWriterProDlg::OnBnClickedButtonInBuffer()
     UpdateBufferDisplay(addr, dataLen);
 }
 
-int COTPWriterProDlg::SendAndWaitToReceiveReport( HIDREPORT_t &r, hid_device * handle )
+int COTPWriterProDlg::SendAndWaitToReceiveReport( HID_REPORT_t &r, hid_device * handle )
 {
     int res = 0;
-    r.packet.print();
     res = SendReport(handle, r);
     if (res < 0) 
         return res;
     
     res = ReceiveReport(handle, r);
-    r.packet.print();
     if (res < 0) 
         return res;
 
@@ -1443,4 +1522,35 @@ UINT8 COTPWriterProDlg::GetDataToFillBuffer()
     }
     else
         return 0;;
+}
+
+
+void COTPWriterProDlg::OnCbnSelchangeComboSelectChipType()
+{
+    CString s;
+    m_ctrlChipSel.GetLBText(m_ctrlChipSel.GetCurSel(), s);
+
+    if (s.IsEmpty())
+        m_ChipType = HS__CMD__CHIP_TYPE__NONE;
+    else if (s.Compare(_T("HS6206")) == 0)
+        m_ChipType = HS__CMD__CHIP_TYPE__OTP__HS6206;
+    else if (s.Compare(_T("EN25T80")) == 0)
+        m_ChipType = HS__CMD__CHIP_TYPE__FLASH__EN25T80;
+    else
+        m_ChipType = HS__CMD__CHIP_TYPE__NONE;
+
+
+    ExecuteCmd(HS__CMD__SET__CHIP_TYPE);
+}
+
+
+void COTPWriterProDlg::OnBnClickedButtonDetectChipType()
+{
+    return ExecuteCmd(HS__CMD__GET__CHIP_TYPE);
+}
+
+
+void COTPWriterProDlg::OnBnClickedButtonVersionNum()
+{
+    return ExecuteCmd(HS__CMD__GET__FIRMWARE_VERSION);
 }

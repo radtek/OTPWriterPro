@@ -98,7 +98,12 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="..\..\..\..\..\work\HS6200\侯国志\HunterSun.ico\HunterSun_100X115.ico" />
+    <None Include="icon1.ico" />
+    <None Include="icon2.ico" />
     <None Include="ReadMe.txt" />
+    <None Include="res\HunterSun_100X115.ico" />
+    <None Include="res\icon1.ico" />
     <None Include="res\OTPWriterPro.ico" />
     <None Include="res\OTPWriterPro.rc2" />
   </ItemGroup>
@@ -113,7 +118,6 @@
     <ClInclude Include="Option.h" />
     <ClInclude Include="OTPWriterPro.h" />
     <ClInclude Include="OTPWriterProDlg.h" />
-    <ClInclude Include="OTPWriterReportDescriptor.h" />
     <ClInclude Include="Packet.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />

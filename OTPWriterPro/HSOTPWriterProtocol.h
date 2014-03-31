@@ -127,10 +127,19 @@ f. 通信协议说明：
 
 //// Flash specific operations
 #define HS__MEM__ERASE_PAGE		0x50	// H2D, D2H: <LEN(1), CSB(1), HS__MEM(1), HS__MEM__ERASE_PAGE(1), PageNumBegin(4), PageNumEnd(4)>
-#define HS__MEM__ERASE_ALL		0x51	// H2D, D2H: <LEN(1), CSB(1), HS__MEM(1), HS__MEM__ERASE_ALL(1), Data(H2D(0)|D2H(1))>
+#define HS__MEM__ERASE_ALL		0x51	// H2D, D2H: <LEN(1), CSB(1), HS__MEM(1), HS__MEM__ERASE_ALL(1), Data(H2D(0)|D2H(8))> // return <PageNumBegin(4), PageNumEnd(4)> ereased really
 #define HS__MEM__RDFPCR			0x52	// H2D, D2H: <LEN(1), CSB(1), HS__MEM(1), HS__MEM__RDFPCR(1), Data(0..1)]>
 
 // CMD relevent packet
+#define HS__CMD__SET__CHIP_TYPE      0x01    // H2D, D2H: <LEN(1), CSB(1), HS__CMD(1), HS__CMD__SET__CHIP_TYPE(1), Data(1)>
+#define HS__CMD__GET__CHIP_TYPE      0x02    // H2D, D2H: <LEN(1), CSB(1), HS__CMD(1), HS__CMD__GET__CHIP_TYPE(1), Data(0..1)>
+typedef enum _HS_CHIP_TYPE_t {
+    HS__CMD__CHIP_TYPE__NONE           =    0x00,
+    HS__CMD__CHIP_TYPE__OTP__HS6206    =    0x01,
+    HS__CMD__CHIP_TYPE__FLASH__EN25T80 =    0x81
+} HS_CHIP_TYPE_t;
+#define HS__CMD__GET__FIRMWARE_VERSION      0x03    // H2D, D2H: <LEN(1), CSB(1), HS__CMD(1), HS__CMD__GET__FIRMWARE_VERSION(1), Data(0..61)>
+
 
 // ERR relevent packet
 

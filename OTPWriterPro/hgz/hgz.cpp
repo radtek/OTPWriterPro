@@ -145,7 +145,17 @@ int hgzSubStringCount(
 	return hgzExtractSubStrings1(arr, s,regexSep);
 }
 
+int hgzDeleteSepFromString(CString &s, const CString &regexSep)
+{
+    CStringArray arr;
 
+    int x = hgzExtractSubStrings1(arr, s, regexSep);
+    s.Format(_T(""));
+    for (int i = 0; i < arr.GetSize(); i++) {
+        s.Append(arr[i]);
+    }
+    return x;
+}
 
 //void regex_test(CString str)
 //{
@@ -275,8 +285,6 @@ void splitfloat(float x, int &intpart, float &fracpart)
 }
 
 
-
-
 int CStringSplit(CStringArray& dest, const CString& source, const CString& divKey)
 {
      dest.RemoveAll();
@@ -375,16 +383,15 @@ BOOL hgzCloseConsole()
 	return TRUE;
 }
 
-void hgzRevertByteOrder( unsigned char *addr, unsigned int length )
+void hgzRevertByteOrder( unsigned char *addr, unsigned int bytes )
 {
 	unsigned char x;
 
-	if (length < 2) return;
-
-	for (int i = 0; i < length/2; i++) {
+	if (bytes < 2) return;
+	for (int i = 0; i < bytes/2; i++) {
 		x = *(addr + i);
-		*(addr + i) = *(addr + length - 1 - i);
-		*(addr + length - 1 - i) = x;
+		*(addr + i) = *(addr + bytes - 1 - i);
+		*(addr + bytes - 1 - i) = x;
 	}
 }
 
@@ -398,4 +405,17 @@ unsigned __int16 hgzRevertByteOrder16( unsigned __int16 x )
 {
 	hgzRevertByteOrder((unsigned char *)&x, 2);
 	return x;
+}UINT64 hgzMaskBits( UINT64 val, int validBits )
+{
+    // validBits == -1: No mask.
+    if (validBits != -1)
+    {
+        unsigned long y = 0;
+        for (int i = 0; i < validBits ; i++)
+        {
+            y |= 1<<i;
+        }
+        val &= y;
+    }
+    return val;
 }

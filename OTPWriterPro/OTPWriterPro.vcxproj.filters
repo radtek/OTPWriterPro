@@ -25,6 +25,21 @@
     <None Include="res\OTPWriterPro.ico">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="res\icon1.ico">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="icon1.ico">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="icon2.ico">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\..\..\..\..\work\HS6200\侯国志\HunterSun.ico\HunterSun_100X115.ico">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="res\HunterSun_100X115.ico">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="OTPWriterPro.h">
@@ -43,9 +58,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="hidapi.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="OTPWriterReportDescriptor.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="HSOTPWriterProtocol.h">

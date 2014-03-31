@@ -55,6 +55,7 @@ extern int hgzSubStringCount(
 	const CString& regexSep			// ·Ö¸ô·û×Ö·û´®
 	);
 
+extern int hgzDeleteSepFromString(CString &s, const CString &regexSep);
 //extern void regex_test(CString str);
 extern void ExtractString(CStringArray& arr, const CString& strSrc, const CString& sep);
 //
@@ -76,4 +77,4 @@ extern BOOL hgzCloseConsole();
 // BigEnding <-> LittleEnding
 extern void hgzRevertByteOrder(unsigned char *addr, unsigned int length);
 extern unsigned __int32 hgzRevertByteOrder32( unsigned __int32 x );
-extern unsigned __int16 hgzRevertByteOrder16( unsigned __int16 x );
+extern unsigned __int16 hgzRevertByteOrder16( unsigned __int16 x );extern UINT64 hgzMaskBits( UINT64 val, int validBits );

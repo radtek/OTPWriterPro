@@ -2,10 +2,11 @@
 #include "Packet.h"
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 #include ".\hgz\hgz.h"
 
 
-
+using namespace std;
 //int CPacket::usb_send(void)
 //{
 //	DWORD dwBytesWriteRequest = 0;
@@ -18,66 +19,77 @@
 //	return m_packet_length = usb_read(&m_pkt.ack);
 //}
 
-void CPacket::print(BOOL printOn)
+void CPacket::print(BOOL bDirectionDown, BOOL printOn /*= TRUE*/)
 {
 	if (!printOn) return;
 
-
-	CString packet_info;
-	int packet_direction = 1; // D2H
-
+    CString packet_info = bDirectionDown ? _T("H2D: ") : _T("D2H: "); //_T("↓ H2D: ") : _T("↑ D2H: ");
 
 	switch (m_pkt.memPkt.cmdL1)
 	{
 	case HS__MEM: 
-		packet_direction = 0;
-		packet_info.Format(_T("H2D: HS__MEM"));
+		packet_info.AppendFormat(_T("HS__MEM"));
 		break;
 	case HS__CMD: 
-		packet_direction = 0;
-		packet_info.Format(_T("H2D: HS__CMD"));
+		packet_info.AppendFormat(_T("HS__CMD"));
 		break;
 	case HS__ERR: 
-		packet_direction = 0;
-		packet_info.Format(_T("H2D: HS__ERR"));
+		packet_info.AppendFormat(_T("HS__ERR"));
 		break;
 	case HS__DBG: 
-		packet_direction = 0;
-		packet_info.Format(_T("H2D: HS__DBG"));
+		packet_info.AppendFormat(_T("HS__DBG"));
 		break;
 	}
 
+	CString cstr; 
+	cstr.Format(_T(""));
+	//cstr.Format(_T("\r\n"));
+	//cstr.AppendFormat(_T("================================================\r\n"));
+	cstr.AppendFormat(_T("%s"), packet_info);
+	cstr.AppendFormat(_T("\r\n"));
+	//cstr.AppendFormat(_T(":  "));
 
-	if (packet_direction == 0)
+	cstr.AppendFormat(_T("%02X | "), m_pkt.memPkt.len);
+    cstr.AppendFormat(_T("%02X | "), m_pkt.memPkt.csb);
+    cstr.AppendFormat(_T("%02X | "), m_pkt.memPkt.cmdL1);
+	cstr.AppendFormat(_T("%02X | "), m_pkt.memPkt.cmdL2);
+	cstr.AppendFormat(_T("%08X | "), hgzRevertByteOrder32(m_pkt.memPkt.addr));
+	cstr.AppendFormat(_T("%08X | "), hgzRevertByteOrder32(m_pkt.memPkt.dataLen));
+	for (int i = 0; i < m_pkt.memPkt.len-12; i++) 
 	{
-		CString cstr; 
-		cstr.Format(_T(""));
-		//cstr.Format(_T("\r\n"));
-		//cstr.AppendFormat(_T("================================================\r\n"));
-		cstr.AppendFormat(_T("%s"), packet_info);
-		cstr.AppendFormat(_T("\r\n"));
-		//cstr.AppendFormat(_T(":  "));
-
-		cstr.AppendFormat(_T("%02X | "), m_pkt.memPkt.len);
-        cstr.AppendFormat(_T("%02X | "), m_pkt.memPkt.csb);
-        cstr.AppendFormat(_T("%02X | "), m_pkt.memPkt.cmdL1);
-		cstr.AppendFormat(_T("%02X | "), m_pkt.memPkt.cmdL2);
-		cstr.AppendFormat(_T("%08X | "), hgzRevertByteOrder32(m_pkt.memPkt.addr));
-		cstr.AppendFormat(_T("%08X | "), hgzRevertByteOrder32(m_pkt.memPkt.dataLen));
-		for (int i = 0; i < m_pkt.memPkt.len-12; i++) 
-		{
-			cstr.AppendFormat(_T("%02X"), m_pkt.memPkt.data[i]);
-		}
-		cstr.AppendFormat(_T("\r\n"));
-		
-		tcout << cstr.GetString();
-
-		
-
-		//// 要输出汉字，需如下设置：
-		//tcout.imbue(std::locale("chs")); // Language and Country/Region Strings
-		//tcout << _T("哈哈");
+		cstr.AppendFormat(_T("%02X"), m_pkt.memPkt.data[i]);
 	}
+	cstr.AppendFormat(_T("\r\n"));
+		
+	tcout << cstr.GetString();
+
+	// logFile
+    // save log file
+    if (0)
+    {
+        CString pathName = _T("HSOTPWriterPro.log");
+        CStdioFile mFile;
+        CFileException mExcept;
+        mFile.Open(pathName, CFile::modeReadWrite | CFile::typeText, &mExcept);
+
+        mFile.SeekToEnd();
+        mFile.WriteString(cstr);
+        mFile.Close();
+
+        /*ofstream of(PathName.GetString(), ios_base::app);
+        if (!of)
+        {
+            cerr << "Cannot open the logfile for output!\n";
+            exit (-1);
+        }
+        of << cstr;
+        of.close();*/
+    }
+
+	//// 要输出汉字，需如下设置：
+	//tcout.imbue(std::locale("chs")); // Language and Country/Region Strings
+	//tcout << _T("哈哈");
+	
 
 }
 
