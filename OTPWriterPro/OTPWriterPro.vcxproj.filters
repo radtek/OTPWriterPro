@@ -84,6 +84,15 @@
     <ClInclude Include="Option.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="HidReport.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="HgzMem.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="hgz\HgzString.h">
+      <Filter>hgz</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="OTPWriterPro.cpp">
@@ -118,6 +127,15 @@
     </ClCompile>
     <ClCompile Include="Option.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="HidReport.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="HgzMem.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="hgz\HgzString.cpp">
+      <Filter>hgz</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

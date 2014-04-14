@@ -92,3 +92,34 @@ BOOL COTPWriterProApp::InitInstance()
 	return FALSE;
 }
 
+//////////////////////////////////////////////////////////////////////////////
+// Globals
+BOOL g_bCancel = FALSE;
+CMutex g_mutex;
+
+CHgzMem g_mem;
+CProgressCtrl *g_pctrlProgress;
+
+//UINT ThreadFunc_Read(LPVOID lpParam)
+//{
+//    g_mutex.Lock();
+//    g_bCancel = FALSE;
+//
+//    // Open the device using the VID, PID, and optionally the Serial number.
+//    hid_device *handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
+//    if (!handle) {
+//        _tprintf(_T("Unable to open device\n"));
+//        g_mutex.Unlock();
+//        return;
+//    }
+//
+//    HID_REPORT_t r;
+//    MemRead(handle, r, GetStartAddress(), GetDataLength());
+//
+//    hid_close(handle); /* Free handle objects. */
+//    hid_exit(); /* Free static HIDAPI objects. */
+//
+//    UpdateBufferDisplay(GetStartAddress(), GetDataLength());
+//
+//    g_mutex.Unlock();
+//}

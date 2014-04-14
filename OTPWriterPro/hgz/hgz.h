@@ -75,6 +75,8 @@ extern BOOL hgzOpenConsole();
 extern BOOL hgzCloseConsole();
 
 // BigEnding <-> LittleEnding
-extern void hgzRevertByteOrder(unsigned char *addr, unsigned int length);
+extern void hgzRevertByteOrder(UINT8 *addr, UINT length);
 extern unsigned __int32 hgzRevertByteOrder32( unsigned __int32 x );
 extern unsigned __int16 hgzRevertByteOrder16( unsigned __int16 x );extern UINT64 hgzMaskBits( UINT64 val, int validBits );
+
+extern CString GetProductVersion(LPCTSTR lpszFileName);

@@ -57,7 +57,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>hid.lib;setupapi.lib;hidclass.lib;hidparse.lib</AdditionalDependencies>
+      <AdditionalDependencies>hid.lib;setupapi.lib;hidclass.lib;hidparse.lib;Version.lib;</AdditionalDependencies>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -84,7 +84,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>hid.lib;setupapi.lib;hidclass.lib;hidparse.lib</AdditionalDependencies>
+      <AdditionalDependencies>hid.lib;setupapi.lib;hidclass.lib;hidparse.lib;Version.lib;</AdditionalDependencies>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -108,12 +108,15 @@
     <None Include="res\OTPWriterPro.rc2" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="HgzMem.h" />
     <ClInclude Include="hgz\HexFile.h" />
     <ClInclude Include="hgz\hgz.h" />
     <ClInclude Include="hgz\HgzComboBox.h" />
     <ClInclude Include="hgz\HgzFormatTransformer.h" />
     <ClInclude Include="hgz\HgzListCtrl.h" />
+    <ClInclude Include="hgz\HgzString.h" />
     <ClInclude Include="hidapi.h" />
+    <ClInclude Include="HidReport.h" />
     <ClInclude Include="HSOTPWriterProtocol.h" />
     <ClInclude Include="Option.h" />
     <ClInclude Include="OTPWriterPro.h" />
@@ -124,15 +127,18 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="HgzMem.cpp" />
     <ClCompile Include="hgz\HexFile.cpp" />
     <ClCompile Include="hgz\hgz.cpp" />
     <ClCompile Include="hgz\HgzComboBox.cpp" />
     <ClCompile Include="hgz\HgzFormatTransformer.cpp" />
     <ClCompile Include="hgz\HgzListCtrl.cpp" />
+    <ClCompile Include="hgz\HgzString.cpp" />
     <ClCompile Include="hid.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="HidReport.cpp" />
     <ClCompile Include="Option.cpp" />
     <ClCompile Include="OTPWriterPro.cpp" />
     <ClCompile Include="OTPWriterProDlg.cpp" />

@@ -371,6 +371,8 @@ BOOL hgzOpenConsole()
 	_tfreopen(_T("CONOUT$"), _T("w+t"), stdout);  
 	_tfreopen(_T("CONIN$"), _T("r+t"), stdin); 
 
+    //_tprintf(_T("↓ H2D: "));
+
 	return TRUE;
 }
 
@@ -383,7 +385,7 @@ BOOL hgzCloseConsole()
 	return TRUE;
 }
 
-void hgzRevertByteOrder( unsigned char *addr, unsigned int bytes )
+void hgzRevertByteOrder( UINT8 *addr, UINT bytes )
 {
 	unsigned char x;
 
@@ -418,4 +420,51 @@ unsigned __int16 hgzRevertByteOrder16( unsigned __int16 x )
         val &= y;
     }
     return val;
+}
+
+/*========================================================================   
+  功能: 获取文件版本信息.   
+  说明: 要使用此函数必需在程序中加入   
+  #pragma comment(lib, "Version.lib")   
+  ----------------------------------------------------------------------------   
+  参数: lpszFileName = 程序文件名,如果为空则是获取当前运行程序的版本信息   
+  来自：http://wenku.baidu.com/view/de635d9cdd88d0d233d46a95.html
+  ==========================================================================*/ 
+CString GetProductVersion(LPCTSTR lpszFileName)   
+{   
+    CString strVersion;   
+    TCHAR szSrcfn[MAX_PATH]; // 要获取信息的文件   
+    if (lpszFileName == NULL)   
+        ::GetModuleFileName(NULL, szSrcfn, sizeof(szSrcfn));   
+    else   
+        lstrcpy(szSrcfn, lpszFileName);   
+    
+    // 读文件信息   
+    DWORD dwVerHnd = 0;   
+    DWORD dwVerInfoSize = ::GetFileVersionInfoSize(szSrcfn, &dwVerHnd);   
+    if (dwVerInfoSize)   
+    {   
+        // If we were able to get the information, process it:   
+        HANDLE hMem;   
+        LPVOID lpvMem;   
+        unsigned int uInfoSize = 0;   
+        VS_FIXEDFILEINFO * pFileInfo;   
+    
+        hMem = ::GlobalAlloc(GMEM_MOVEABLE, dwVerInfoSize);   
+        lpvMem = ::GlobalLock(hMem);   
+        ::GetFileVersionInfo(szSrcfn, dwVerHnd, dwVerInfoSize, lpvMem);   
+        ::VerQueryValue(lpvMem, (LPTSTR)_T("\\"), (void**)&pFileInfo, &uInfoSize);   
+    
+        WORD nVer[4];   
+        nVer[0] = HIWORD(pFileInfo->dwProductVersionMS);   
+        nVer[1] = LOWORD(pFileInfo->dwProductVersionMS);   
+        nVer[2] = HIWORD(pFileInfo->dwProductVersionLS);   
+        nVer[3] = LOWORD(pFileInfo->dwProductVersionLS);   
+        strVersion.Format(_T("%d.%d.%d.%d"), nVer[0], nVer[1],nVer[2],nVer[3]);   
+    
+        ::GlobalUnlock(hMem);   
+        ::GlobalFree(hMem);   
+    }   
+    
+    return strVersion;   
 }
