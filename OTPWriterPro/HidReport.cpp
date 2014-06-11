@@ -315,22 +315,27 @@ INT CHidReport::ReceiveReport( hid_device *handle, BOOL bPrint/* = TRUE*/ )
     HS_COMMON_PACKET_t p = m_pkt;
 
 	// Set the hid_read() function to be non-blocking.
-	hid_set_nonblocking(handle, 1);
+	hid_set_nonblocking(handle, 0);
 	// detect if device is ready for receiving another packet of data
 	// Read requested state. hid_read() has been set to be
 	// non-blocking by the call to hid_set_nonblocking() above.
 	// This loop demonstrates the non-blocking nature of hid_read().
 	int res = 0;
 	_tprintf(_T("Receiving Report ...\n"));
-	while (res == 0) {
+	/*while (res == 0) {
 		res = hid_read(handle, (UINT8 *)&m_pkt, sizeof(m_pkt));
 // 		if (res == 0)
 // 			_tprintf(_T("."));
 		if (res < 0)
 			_tprintf(_T("Unable to read()\n"));
 		//Sleep(500);
-	}
-	_tprintf(_T("Received data: "));
+	}*/
+
+    res = hid_read_timeout(handle, (UINT8 *)&m_pkt, sizeof(m_pkt), 5000);
+    if (res == 0)
+        _tprintf(_T("Timeout!\n"));
+
+    _tprintf(_T("Received data: "));
     print(FALSE, bPrint);
 	
 	if (p.memPkt.cmdL1 == m_pkt.memPkt.cmdL1 && 

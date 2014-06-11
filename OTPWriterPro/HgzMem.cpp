@@ -385,7 +385,7 @@ BOOL CHgzMem::ExecuteMemCmd( CHidReport &r, UINT32 *res /*= NULL */ )
         goto Label_Return;
     }
 
-    if (r.ReceiveReport(handle) < 0)
+    if (r.ReceiveReport(handle) <= 0)
     {
         bRes = FALSE;
         goto Label_Return;
