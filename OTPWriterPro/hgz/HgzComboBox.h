@@ -23,6 +23,8 @@ public:
 	unsigned char GetWindowDec(void); // 取 10 进制数
 	int GetWindowHexByteCount(void);
 	int GetWindowHexArray(unsigned char * pHex);
+
+    int SetWindowsTextFormat(const TCHAR * szFormat, ...);
 };
 
 

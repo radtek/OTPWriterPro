@@ -125,12 +125,27 @@ public:
     afx_msg void OnBnClickedCheckLengthHex();
 
     void PrintCurrentTime();
-    void EditCtrlOutput(CString s, int pos = 0);
+    void EditCtrlOutput(int pos, const TCHAR *szFormat, ...);
+    /*// Macro implimentation:
+    #define EditCtrlOutput(pos, szFormat, ...) \
+    do {\
+        CString s; \
+        s.Format(szFormat, ##__VA_ARGS__); \
+        int len = m_ctrlEdit.GetWindowTextLength(); \
+        m_ctrlEdit.SetSel(len + pos, len); \
+        m_ctrlEdit.ReplaceSel(s); \
+        len; \
+    } while (0)*/
     unsigned int GetStartAddress();
     unsigned int GetDataLength();
     UINT8 GetDataToFillBuffer();
     void UpdateBufferDisplay( unsigned int addr, unsigned int length );
     void Cmd1Data0( CHgzMem::pMemFunc_Cmd1Data0 CmdFunc, CString s );
+
+
+    CButton m_bnTEST1;
+    CButton m_bnTEST2;
+    CButton m_bnFind;
 };
 
 

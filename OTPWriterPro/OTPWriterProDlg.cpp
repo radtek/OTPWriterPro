@@ -22,6 +22,7 @@
 
 
 
+
 ////////////////////////////////////////////////////////////////////////////////
 	
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
@@ -83,6 +84,9 @@ void COTPWriterProDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_CHECK4, m_chkFillBufferAll);
     DDX_Control(pDX, IDC_CHECK5, m_chkClearBufferAll);
     DDX_Control(pDX, IDC_CHECK_LENGTH_HEX, m_chkDataLen);
+    DDX_Control(pDX, IDC_BUTTON1, m_bnTEST1);
+    DDX_Control(pDX, IDC_BUTTON2, m_bnTEST2);
+    DDX_Control(pDX, IDC_BUTTON22, m_bnFind);
 }
 
 BEGIN_MESSAGE_MAP(COTPWriterProDlg, CDialogEx)
@@ -192,6 +196,9 @@ BOOL COTPWriterProDlg::OnInitDialog()
 
 	// Start a periodic read IRP to timely receive datas from device.
 	//SetTimer(1, 1, NULL);
+    m_bnFind.EnableWindow(FALSE);
+    m_bnTEST1.EnableWindow(FALSE);
+    m_bnTEST2.EnableWindow(FALSE);
 
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
@@ -499,9 +506,7 @@ void COTPWriterProDlg::OnBnClickedButtonOpenFile()
 
     PrintCurrentTime();
 
-    CString s;
-    s.Format(_T("Open file: %s ...   0%%"), pathName);
-    EditCtrlOutput(s);
+    EditCtrlOutput(0, _T("Open file: %s ...   0%%"), pathName);
 
     int nOldSize = g_mem.SizeUsed();
 
@@ -531,8 +536,7 @@ void COTPWriterProDlg::OnBnClickedButtonOpenFile()
 
             int percent = 100 * curpos / fileLen;
             m_ctrlProgress.SetPos(percent);
-            s.Format(_T("%3d%%"), percent);
-            EditCtrlOutput(s, -4);
+            EditCtrlOutput(-4, _T("%3d%%"), percent);
         }
         g_mem.SizeUsed(addr);
     }
@@ -557,7 +561,7 @@ void COTPWriterProDlg::OnBnClickedButtonOpenFile()
 
 
     m_ctrlProgress.SetPos(100);
-    EditCtrlOutput(s = _T("100%\r\n"), -4);
+    EditCtrlOutput(-4, _T("100%\r\n"));
     mFile.Close();
 
     //UpdateBufferShow();
@@ -589,9 +593,7 @@ void COTPWriterProDlg::OnBnClickedButtonSaveAs()
 
 	PrintCurrentTime();
 
-	CString s;
-	s.Format(_T("Save file: %s ...   0%%"), pathName);
-	EditCtrlOutput(s);
+	EditCtrlOutput(0, _T("Save file: %s ...   0%%"), pathName);
 
     INT memSize = g_mem.SizeUsed();
     UINT8 *memBuf = g_mem.GetBuf();
@@ -628,8 +630,7 @@ void COTPWriterProDlg::OnBnClickedButtonSaveAs()
 			// progress
 			int percent = 100*addr / memSize;
 			m_ctrlProgress.SetPos(percent);
-			s.Format(_T("%3d%%"), percent);
-			EditCtrlOutput(s, -4);
+			EditCtrlOutput(-4, _T("%3d%%"), percent);
 		}
 	}
 	else if (fileExt.CompareNoCase(_T("BIN")) == 0) {
@@ -643,30 +644,33 @@ void COTPWriterProDlg::OnBnClickedButtonSaveAs()
 	}
 
 	m_ctrlProgress.SetPos(100);
-	EditCtrlOutput(s = _T("100%\r\n"), -4);
+	EditCtrlOutput(-4, _T("100%\r\n"));
 	mFile.Close();
 }
 
-void COTPWriterProDlg::EditCtrlOutput( CString s, int pos /*= 0*/ )
+
+void COTPWriterProDlg::EditCtrlOutput( int pos, const TCHAR *szFormat, ... )
 {
-	// pos 为相对于最后位置的字符数
-	int len = m_ctrlEdit.GetWindowTextLength(); 
-	m_ctrlEdit.SetSel(len + pos,len); //将插入光标放在最后 
-	m_ctrlEdit.ReplaceSel(s); 
-	//m_ctrlEdit.ScrollWindow(0,0); //滚动到插入点 (滚动条始终在底部，不闪动)
+    // pos 为相对于最后位置的字符数
+
+    va_list arglist;
+    va_start(arglist, szFormat);
+    TCHAR *buf = new TCHAR[_vsctprintf(szFormat, arglist)+1];
+    //TCHAR *buf = (TCHAR *)_alloca((_vsctprintf(szFormat, arglist)+1)*sizeof(TCHAR)); // 动态分配栈内存，无需手动释放。
+    _vstprintf(buf, szFormat, arglist);
+
+    int len = m_ctrlEdit.GetWindowTextLength(); 
+    m_ctrlEdit.SetSel(len + pos, len); //将插入光标放在最后 
+    m_ctrlEdit.ReplaceSel(buf); 
+    //m_ctrlEdit.ScrollWindow(0,0); //滚动到插入点 (滚动条始终在底部，不闪动)
+    delete [] buf;
 }
 
 
 void COTPWriterProDlg::OnBnClickedButtonWrite()
 {
     PrintCurrentTime();
-    INT32 x = g_mem.Write(GetStartAddress(), GetDataLength());  
-
-    CHgzString s;
-    s.ulltoa(x, 10);
-    CString s1;
-    s1 = _T("实际写入字节数：") + s + _T("\r\n");
-    EditCtrlOutput(s1);
+    EditCtrlOutput(0, _T("实际写入字节数：%d\r\n"), g_mem.Write(GetStartAddress(), GetDataLength()));
 }
 
 
@@ -676,14 +680,8 @@ void COTPWriterProDlg::OnBnClickedButtonRead()
     
     INT addr = GetStartAddress();
     INT len = GetDataLength();
-    INT32 x = g_mem.Read(addr, len);
+    EditCtrlOutput(0, _T("实际读取字节数：%d\r\n"), g_mem.Read(addr, len));
     UpdateBufferDisplay(addr, len);
-
-    CHgzString s;
-    s.ulltoa(x, 10);
-    CString s1;
-    s1 = _T("实际读取字节数：") + s + _T("\r\n");
-    EditCtrlOutput(s1);
 }
 
 
@@ -691,9 +689,9 @@ void COTPWriterProDlg::OnBnClickedButtonVerify()
 {
     PrintCurrentTime();
     if (g_mem.Verify(GetStartAddress(), GetDataLength()))
-        EditCtrlOutput(_T("校验成功！\r\n"));
+        EditCtrlOutput(0, _T("校验成功！\r\n"));
     else
-        EditCtrlOutput(_T("校验失败！\r\n"));
+        EditCtrlOutput(0, _T("校验失败！\r\n"));
 }
 
 void COTPWriterProDlg::OnBnClickedButtonEncrypt()
@@ -719,7 +717,7 @@ void COTPWriterProDlg::OnBnClickedButtonErase()
         if (s.IsEmpty()) 
         {
             AfxMessageBox(_T("参数不能为空！"));
-            EditCtrlOutput(_T("参数不能为空！\r\n"));
+            EditCtrlOutput(0, _T("参数不能为空！\r\n"));
             return;
         }
         CStringArray arr;
@@ -727,7 +725,7 @@ void COTPWriterProDlg::OnBnClickedButtonErase()
         if (arr.GetSize() > 2)
         {
             AfxMessageBox(_T("参数太多！"));
-            EditCtrlOutput(_T("参数太多！\r\n"));
+            EditCtrlOutput(0, _T("参数太多！\r\n"));
             return;
         }
         if (arr.GetSize() == 1)
@@ -742,24 +740,18 @@ void COTPWriterProDlg::OnBnClickedButtonErase()
 
     if (bRes)
     {
-        CHgzString s;
-        s.Format(_T("成功擦除块：%d - %d\r\n"), startSectorNum, endSectorNum);
-        EditCtrlOutput(s);
+        EditCtrlOutput(0, _T("成功擦除块：%d - %d\r\n"), startSectorNum, endSectorNum);
     }
     else
     {
-        CHgzString s;
-        s.Format(_T("执行失败！\r\n"));
-        EditCtrlOutput(s);
+        EditCtrlOutput(0, _T("执行失败！\r\n"));
     }
 }
 
 void COTPWriterProDlg::PrintCurrentTime()
 {
-	CString s;
 	CTime t = CTime::GetCurrentTime();
-	s.Format(_T("%04d-%02d-%02d %02d:%02d:%02d:  "), t.GetYear(), t.GetMonth(), t.GetDay(), t.GetHour(), t.GetMinute(), t.GetSecond());
-	EditCtrlOutput(s);
+	EditCtrlOutput(0, _T("%04d-%02d-%02d %02d:%02d:%02d:  "), t.GetYear(), t.GetMonth(), t.GetDay(), t.GetHour(), t.GetMinute(), t.GetSecond());
 }
 
 
@@ -785,7 +777,7 @@ afx_msg LRESULT COTPWriterProDlg::OnLvmItemChanged(WPARAM wParam, LPARAM lParam)
         }
         catch (std::invalid_argument &e)
         {
-            EditCtrlOutput(_T("Invalid argument!\r\n"));
+            EditCtrlOutput(0, _T("Invalid argument!\r\n"));
             if (g_mem.IsUsed(addr))
             {
                 s.Format(_T("%02X"), g_mem.GetBuf()[addr]);
@@ -960,6 +952,8 @@ UINT8 COTPWriterProDlg::GetDataToFillBuffer()
 
 void COTPWriterProDlg::OnCbnSelchangeComboSelectChipType()
 {
+    PrintCurrentTime();
+
     CString s;
     m_ctrlChipSel.GetLBText(m_ctrlChipSel.GetCurSel(), s);
 
@@ -979,21 +973,23 @@ void COTPWriterProDlg::OnCbnSelchangeComboSelectChipType()
     else
         str += _T("失败！\r\n");
 
-    EditCtrlOutput(str);
+    EditCtrlOutput(0, str.GetString());
 }
 
 
 void COTPWriterProDlg::OnBnClickedButtonDetectChipType()
 {
+    PrintCurrentTime();
+
     HS_CHIP_TYPE_t chipType = m_ChipType;
     BOOL bRes = g_mem.DetectChipType(&chipType);
     if ( bRes && chipType!=HS__CMD__CHIP_TYPE__NONE )
     {
-        EditCtrlOutput(_T("检测芯片型号成功！\r\n"));
+        EditCtrlOutput(0, _T("检测芯片型号成功！\r\n"));
     }
     else
     {
-        EditCtrlOutput(_T("检测芯片型号失败！\r\n"));
+        EditCtrlOutput(0, _T("检测芯片型号失败！\r\n"));
         return;
     }
     
@@ -1018,8 +1014,7 @@ void COTPWriterProDlg::OnBnClickedButtonVersionNum()
 {
     // 上位机版本信息
     PrintCurrentTime();
-    CString s = _T("上位机软件版本信息：") + GetProductVersion(NULL) + _T("\r\n");
-    EditCtrlOutput(s);
+    EditCtrlOutput(0, _T("上位机软件版本信息：%s\r\n"), GetProductVersion(NULL));
     
     // 下位机版本信息
     PrintCurrentTime();
@@ -1028,15 +1023,13 @@ void COTPWriterProDlg::OnBnClickedButtonVersionNum()
 
     if ( bRes )
     {
-        CString s1(fmVerInfo);
-        CString s;
-        s.Format(_T("下位机固件版本信息：%s\r\n"), s1);
-        printf("%s\n", fmVerInfo);
-        EditCtrlOutput(s);
+        CString s(fmVerInfo);
+        _tprintf(_T("%s\n"), s);
+        EditCtrlOutput(0, _T("下位机固件版本信息：%s\r\n"), s);
     }
     else
     {
-        EditCtrlOutput(_T("获取下位机固件版本信息失败！\r\n"));
+        EditCtrlOutput(0, _T("下位机固件版本信息：获取失败！\r\n"));
         return;
     }
 }
@@ -1073,5 +1066,5 @@ void COTPWriterProDlg::Cmd1Data0( CHgzMem::pMemFunc_Cmd1Data0 CmdFunc, CString s
     else
         str += _T("失败！\r\n");
 
-    EditCtrlOutput(str);
+    EditCtrlOutput(0, str.GetString());
 }

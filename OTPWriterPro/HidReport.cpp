@@ -418,7 +418,7 @@ UINT32 CHidReport::GetResult()
 
             case HS__MEM__RDFPCR:
 
-                return m_pkt.memPkt.data[0];
+                return m_pkt.cmdPkt.data[0];
 
             default:
                 break;

@@ -148,6 +148,8 @@ INT32 CHgzMem::Write( UINT32 addr, UINT32 length )
 
     hid_close(handle); /* Free handle objects. */
     hid_exit(); /* Free static HIDAPI objects. */
+
+    return num;
 }
 
 INT32 CHgzMem::Read( UINT32 addr, UINT32 length )

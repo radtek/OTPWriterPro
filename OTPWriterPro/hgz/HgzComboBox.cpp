@@ -193,3 +193,18 @@ int CHgzComboBox::GetWindowHexByteCount(void)
 	
 	return arr.GetSize();
 }
+
+int CHgzComboBox::SetWindowsTextFormat( const TCHAR * szFormat, ... )
+{
+    va_list arglist;
+    va_start(arglist, szFormat);
+    int len = _vsctprintf(szFormat, arglist)+1;
+    TCHAR *buf = new TCHAR[len];
+    //TCHAR *buf = (TCHAR *)_alloca((_vsctprintf(szFormat, arglist)+1)*sizeof(TCHAR)); // 动态分配栈内存，无需手动释放。
+    _vstprintf(buf, szFormat, arglist);
+
+    SetWindowText(buf);
+    delete [] buf;
+
+    return len-1;
+}
