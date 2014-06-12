@@ -270,7 +270,7 @@ BOOL CHgzMem::Verify( UINT32 addr, UINT32 length )
         {
             res = FALSE;
             CString s;
-            s.Format(_T("Verification fails!\r\n (addr | mem_data | buffer_data): %08X | %02X | %02X\r\n"), addr+err, r.m_pkt.memPkt.data[err], m_buf[addr+err]);
+            s.Format(_T("Verification fails!\r\n (addr | mem_data | buffer_data): %08X | %02X | %02X\r\n"), addr+num+err, r.m_pkt.memPkt.data[err], m_buf[addr+err]);
             tcout << s.GetString();
             AfxMessageBox(s);
             break;
