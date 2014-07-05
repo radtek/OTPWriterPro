@@ -11,7 +11,6 @@
 //#include <fstream>
 #include ".\hgz\hgz.h"
 #include <string>
-#include "Option.h"
 #include "hgz/HgzString.h"
 
 
@@ -78,7 +77,6 @@ void COTPWriterProDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_COMBO3, m_ctrlMemAddrBegin);
     DDX_Control(pDX, IDC_COMBO4, m_ctrlDataLength);
     DDX_Control(pDX, IDC_PROGRESS1, m_ctrlProgress);
-    DDX_Control(pDX, IDC_CHECK3, m_ctrlSaveAppend);
     DDX_Control(pDX, IDC_LIST1, m_ctrlListBuffer);
     DDX_Control(pDX, IDC_COMBO6, m_cbDataToFill);
     DDX_Control(pDX, IDC_CHECK4, m_chkFillBufferAll);
@@ -185,10 +183,10 @@ BOOL COTPWriterProDlg::OnInitDialog()
 
 
     // Option
-    m_option.bEnableConsoleOutput = FALSE;
-    m_option.bEnableIncontinuousCell = FALSE;
-    m_option.nPacketDataLength = 52;
-    if (m_option.bEnableConsoleOutput)	
+    m_Option.m_bEnableConsoleOutput = FALSE;
+    m_Option.m_bWriteBufSizeReallyUsed = FALSE;
+    m_Option.m_nPacketDataLength = 52;
+    if (m_Option.m_bEnableConsoleOutput)	
         hgzOpenConsole();
 
     m_ChipType = HS__CMD__CHIP_TYPE__OTP__HS6206;
@@ -635,7 +633,7 @@ void COTPWriterProDlg::OnBnClickedButtonSaveAs()
 	}
 	else if (fileExt.CompareNoCase(_T("BIN")) == 0) {
 		mFile.Open(pathName, CFile::modeCreate | CFile::modeWrite | CFile::typeBinary, &mExcept);
-		m_ctrlSaveAppend.GetCheck() ? mFile.SeekToEnd() : mFile.SeekToBegin();
+		mFile.SeekToBegin();
 		mFile.Write(memBuf, memSize);
 	}
 	else {
@@ -670,7 +668,7 @@ void COTPWriterProDlg::EditCtrlOutput( int pos, const TCHAR *szFormat, ... )
 void COTPWriterProDlg::OnBnClickedButtonWrite()
 {
     PrintCurrentTime();
-    EditCtrlOutput(0, _T("实际写入字节数：%d\r\n"), g_mem.Write(GetStartAddress(), GetDataLength()));
+    EditCtrlOutput(0, _T("实际写入字节数：%d\r\n"), m_Option.m_bWriteBufSizeReallyUsed ? g_mem.Write(0, g_mem.SizeUsed()) : g_mem.Write(GetStartAddress(), GetDataLength()));
 }
 
 
@@ -894,21 +892,12 @@ void COTPWriterProDlg::UpdateBufferDisplay( unsigned int addr, unsigned int leng
 
 void COTPWriterProDlg::OnBnClickedButtonOption()
 {
-    COption o;
-    o.m_bEnableConsoleOutput = m_option.bEnableConsoleOutput;
-    o.m_bEnableIncontinuousCell = m_option.bEnableIncontinuousCell;
-    o.m_nPacketDataLength = m_option.nPacketDataLength;
-
-    if (o.DoModal() == IDCANCEL)
+    if (m_Option.DoModal() == IDCANCEL)
     {
         return;
     }
 
-    m_option.bEnableConsoleOutput = o.m_bEnableConsoleOutput;
-    m_option.bEnableIncontinuousCell = o.m_bEnableIncontinuousCell;
-    m_option.nPacketDataLength = o.m_nPacketDataLength;
-
-    if (m_option.bEnableConsoleOutput)
+    if (m_Option.m_bEnableConsoleOutput)
         hgzOpenConsole();
     else
         hgzCloseConsole();

@@ -15,6 +15,7 @@
 #include "HidReport.h"
 #include "HgzMem.h"
 #include "OTPWriterPro.h"
+#include "Option.h"
 
 
 extern "C" {
@@ -82,7 +83,6 @@ public:
 	CHgzComboBox m_ctrlChipSel;
     CHgzComboBox m_ctrlMemAddrBegin;
     CHgzComboBox m_ctrlDataLength;
-    CButton m_ctrlSaveAppend;
     CProgressCtrl m_ctrlProgress;
     CHgzComboBox m_ctrlPacketDataLength;
     CHgzListCtrl m_ctrlListBuffer;
@@ -93,13 +93,7 @@ public:
 
     HS_CHIP_TYPE_t m_ChipType;
 
-    typedef struct {
-        BOOL bEnableConsoleOutput;
-        BOOL bEnableIncontinuousCell;
-        INT nPacketDataLength;
-    } OPTION_t;
-    OPTION_t m_option;
-
+    COption m_Option;
 
     afx_msg void OnBnClickedButtonOpenFile();
     afx_msg void OnBnClickedButtonSaveAs();

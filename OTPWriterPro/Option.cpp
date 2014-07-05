@@ -13,7 +13,7 @@ IMPLEMENT_DYNAMIC(COption, CDialogEx)
 
 COption::COption(CWnd* pParent /*=NULL*/)
 	: CDialogEx(COption::IDD, pParent)
-    , m_bEnableIncontinuousCell(FALSE)
+    , m_bWriteBufSizeReallyUsed(FALSE)
     , m_bEnableConsoleOutput(FALSE)
     , m_nPacketDataLength(52)
 {
@@ -27,7 +27,7 @@ COption::~COption()
 void COption::DoDataExchange(CDataExchange* pDX)
 {
     CDialogEx::DoDataExchange(pDX);
-    DDX_Check(pDX, IDC_CHECK_ENABLE_INCONTINUOUS_ADDRESS, m_bEnableIncontinuousCell);
+    DDX_Check(pDX, IDC_CHECK_ENABLE_INCONTINUOUS_ADDRESS, m_bWriteBufSizeReallyUsed);
     DDX_Check(pDX, IDC_CHECK2, m_bEnableConsoleOutput);
     DDX_Text(pDX, IDC_COMBO5, m_nPacketDataLength);
 	DDV_MinMaxInt(pDX, m_nPacketDataLength, 1, 52);

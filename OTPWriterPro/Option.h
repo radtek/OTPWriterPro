@@ -19,7 +19,7 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 public:
-    BOOL m_bEnableIncontinuousCell;
+    BOOL m_bWriteBufSizeReallyUsed;
     BOOL m_bEnableConsoleOutput;
     int m_nPacketDataLength;
 };
