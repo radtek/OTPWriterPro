@@ -512,6 +512,7 @@ void COTPWriterProDlg::OnBnClickedButtonOpenFile()
     {
         mFile.Open(pathName, CFile::modeRead | CFile::typeText, &mExcept);
         unsigned int addr = 0;
+        unsigned int max_addr = 0;
         unsigned int curpos = 0;
         unsigned int fileLen = (unsigned int)mFile.GetLength();
 
@@ -531,12 +532,13 @@ void COTPWriterProDlg::OnBnClickedButtonOpenFile()
         while ((curpos = (unsigned int)mFile.GetPosition()) != fileLen) 
         {
             HexRecReadFromFile(g_mem.GetBuf(), g_mem.GetBufFlag(), mFile, hr, addr);
+            max_addr = max(max_addr, addr);
 
             int percent = 100 * curpos / fileLen;
             m_ctrlProgress.SetPos(percent);
             EditCtrlOutput(-4, _T("%3d%%"), percent);
         }
-        g_mem.SizeUsed(addr);
+        g_mem.SizeUsed(max_addr);
     }
     else if (fileExt.CompareNoCase(_T("BIN")) == 0) 
     {

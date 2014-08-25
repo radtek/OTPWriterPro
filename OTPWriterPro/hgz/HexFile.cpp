@@ -56,53 +56,54 @@ void HexRecPrint( HEXRECORD_t &hr )
 	_tprintf(_T(" | %02X"), hr.data[hr.reclen]);
 }
 
+
 void HexRecReadFromFile( unsigned char *buf, unsigned char *buf_flag, CStdioFile &mFile, HEXRECORD_t &hr, unsigned int &cur_addr )
 {
-	CString s;
-	mFile.ReadString(s);
-	for (int i = 1; i < s.GetLength(); i+=2) {
-		((unsigned char *)&hr)[1+i/2] = (unsigned char)stoul((tstring)(s.Mid(i, 2).GetString()), 0, 16);
-	}
-	//HexRecPrint(hr);
+    CString s;
+    mFile.ReadString(s);
+    for (int i = 1; i < s.GetLength(); i+=2) {
+        ((unsigned char *)&hr)[1+i/2] = (unsigned char)stoul((tstring)(s.Mid(i, 2).GetString()), 0, 16);
+    }
+    //HexRecPrint(hr);
 
-	unsigned int addr;
-	unsigned int base_addr = cur_addr & 0xffff0000;
+    unsigned int addr;
+    unsigned int base_addr = cur_addr & 0xffff0000;
 
-	switch ((HEXRECTYPE_t)hr.rectype) 
+    switch ((HEXRECTYPE_t)hr.rectype) 
     {
-	case HEX_REC_DAT: // Data Record
-		addr = base_addr + (hr.addrh<<8) + hr.addrl;
-		//_tprintf(_T(" | %08X"), addr);
-		memset(buf+cur_addr, 0, addr-cur_addr);
-        memset(buf_flag+cur_addr, 0, addr-cur_addr);
-		memcpy(buf+addr, hr.data, hr.reclen);
+    case HEX_REC_DAT: // Data Record
+        addr = base_addr + (hr.addrh<<8) + hr.addrl;
+        //_tprintf(_T(" | %08X"), addr);
+        //memset(buf+cur_addr, 0, addr-cur_addr);
+        //memset(buf_flag+cur_addr, 0, addr-cur_addr);
+        memcpy(buf+addr, hr.data, hr.reclen);
         memset(buf_flag+addr, 1, hr.reclen);
-		cur_addr = addr + hr.reclen;
-		break;
-	case HEX_REC_EOF: // End of File Record
-		//wbuf_data_length = cur_addr;
-		break;
-	case HEX_REC_ESA: // Extended Segment Address Record
-		base_addr = (hr.data[0]<<12) + (hr.data[1]<<4);
-		memset(buf+cur_addr, 0, base_addr-cur_addr);
-        memset(buf_flag+cur_addr, 0, base_addr-cur_addr);
-		cur_addr = base_addr;
-		break;
-	case HEX_REC_SSA: // Start Segment Address Record
-		AfxMessageBox(_T("Hex item type: 0x03 (Start Segment Address Record), unprocessed."));
-		break;
-	case HEX_REC_ELA: // Extended Linear Address Record
-		base_addr = (hr.data[0]<<24) + (hr.data[1]<<16);
-		memset(buf+cur_addr, 0, base_addr-cur_addr);
-        memset(buf_flag+cur_addr, 0, base_addr-cur_addr);
-		cur_addr = base_addr;
-		break;
-	case HEX_REC_SLA: // Start Linear Address Record
-		AfxMessageBox(_T("Hex item type: 0x05 (Start Linear Address Record), unprocessed."));
-		break;
-	default:
-		break;
-	}
+        cur_addr = addr + hr.reclen;
+        break;
+    case HEX_REC_EOF: // End of File Record
+        //wbuf_data_length = cur_addr;
+        break;
+    case HEX_REC_ESA: // Extended Segment Address Record
+        base_addr = (hr.data[0]<<12) + (hr.data[1]<<4);
+        //memset(buf+cur_addr, 0, base_addr-cur_addr);
+        //memset(buf_flag+cur_addr, 0, base_addr-cur_addr);
+        cur_addr = base_addr;
+        break;
+    case HEX_REC_SSA: // Start Segment Address Record
+        AfxMessageBox(_T("Hex item type: 0x03 (Start Segment Address Record), unprocessed."));
+        break;
+    case HEX_REC_ELA: // Extended Linear Address Record
+        base_addr = (hr.data[0]<<24) + (hr.data[1]<<16);
+        //memset(buf+cur_addr, 0, base_addr-cur_addr);
+        //memset(buf_flag+cur_addr, 0, base_addr-cur_addr);
+        cur_addr = base_addr;
+        break;
+    case HEX_REC_SLA: // Start Linear Address Record
+        AfxMessageBox(_T("Hex item type: 0x05 (Start Linear Address Record), unprocessed."));
+        break;
+    default:
+        break;
+    }
 
 }
 
