@@ -333,7 +333,10 @@ INT CHidReport::ReceiveReport( hid_device *handle, BOOL bPrint/* = TRUE*/ )
 
     res = hid_read_timeout(handle, (UINT8 *)&m_pkt, sizeof(m_pkt), 5000);
     if (res == 0)
+    {
         _tprintf(_T("Timeout!\n"));
+        return -1;
+    }
 
     _tprintf(_T("Received data: "));
     print(FALSE, bPrint);

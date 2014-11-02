@@ -137,13 +137,13 @@ INT32 CHgzMem::Write( UINT32 addr, UINT32 length )
     while (num != length) 
     {
         // build the MemWrite packet.
-        num += r.MemWriteReport(addr+num, min(packet_data_length, length-num), m_buf.GetData()+num);
+        num += r.MemWriteReport(addr+num, min(packet_data_length, length-num), m_buf.GetData()+addr+num);
         if (r.SendAndWaitToReceiveReport(handle) < 0) 
             break;
         g_pctrlProgress->SetPos(num*100/length);
     }
     // Send the terminating data-empty packet.
-    r.MemWriteReport(addr+num, 0, m_buf.GetData()+num);
+    r.MemWriteReport(addr+num, 0, m_buf.GetData()+addr+num);
     r.SendReport(handle);
 
     hid_close(handle); /* Free handle objects. */
