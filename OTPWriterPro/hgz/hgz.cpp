@@ -407,7 +407,9 @@ unsigned __int16 hgzRevertByteOrder16( unsigned __int16 x )
 {
 	hgzRevertByteOrder((unsigned char *)&x, 2);
 	return x;
-}UINT64 hgzMaskBits( UINT64 val, int validBits )
+}
+
+UINT64 hgzMaskBits( UINT64 val, int validBits )
 {
     // validBits == -1: No mask.
     if (validBits != -1)

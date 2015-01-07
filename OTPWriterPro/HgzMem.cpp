@@ -177,7 +177,7 @@ INT32 CHgzMem::Read( UINT32 addr, UINT32 length )
         goto Label_Return;
     }
 
-    ClearBufAll();
+    //ClearBufAll();
     while (1) 
     {
         if (r.ReceiveReport(handle) < 0)
@@ -270,8 +270,9 @@ BOOL CHgzMem::Verify( UINT32 addr, UINT32 length )
         if ((err = CompareMemData(r, m_buf.GetData())) != -1)
         {
             res = FALSE;
+            UINT errAddr = addr + num + err;
             CString s;
-            s.Format(_T("Verification fails!\r\n (addr | mem_data | buffer_data): %08X | %02X | %02X\r\n"), addr+num+err, r.m_pkt.memPkt.data[err], m_buf[addr+err]);
+            s.Format(_T("Verification fails!\r\n (addr | mem_data | buffer_data): %08X | %02X | %02X\r\n"), errAddr, r.m_pkt.memPkt.data[err], errAddr < g_mem.SizeUsed() ? m_buf[errAddr] : 0x00);
             tcout << s.GetString();
             AfxMessageBox(s);
             break;
@@ -360,7 +361,9 @@ INT CHgzMem::CompareMemData( CHidReport &r, UINT8 *pBuf )
 
     for (int i = 0; i < dataLen ; i++)
     {
-        if (r.m_pkt.memPkt.data[i] != pBuf[address + i]) {
+        UINT addr = address + i;
+
+        if (r.m_pkt.memPkt.data[i] != (addr < g_mem.SizeUsed() ? pBuf[addr] : 0)) {
             return i; // index of the first error byte in the report data field.
         }
     }
