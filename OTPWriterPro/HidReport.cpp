@@ -280,6 +280,7 @@ INT32 CHidReport::MemWriteReport( UINT32 addr, UINT32 dataLen, UINT8 *pBuf )
 INT CHidReport::SendReport( hid_device *handle, BOOL bPrint/* = TRUE*/ )
 {
     print(TRUE, bPrint);
+    
     // Set the hid_write() function to be blocking.
     hid_set_nonblocking(handle, 1);
     // send HS__MEM__WRITE packet.
@@ -331,7 +332,7 @@ INT CHidReport::ReceiveReport( hid_device *handle, BOOL bPrint/* = TRUE*/ )
 		//Sleep(500);
 	}*/
 
-    res = hid_read_timeout(handle, (UINT8 *)&m_pkt, sizeof(m_pkt), 5000);
+    res = hid_read_timeout(handle, (UINT8 *)&m_pkt, sizeof(m_pkt), 30000);
     if (res == 0)
     {
         _tprintf(_T("Timeout!\n"));
