@@ -28,6 +28,8 @@ extern "C" {
 #include "afxwin.h"
 #include "afxcmn.h"
 #include "d:\users\hgz\documents\appdata\visual studio 2010\projects\otpwriterpro\otpwriterpro\hgz\hgzcombobox.h"
+#include "d:\users\hgz\documents\appdata\visual studio 2010\projects\otpwriterpro\otpwriterpro\hgz\hgzcombobox.h"
+#include "d:\users\hgz\documents\appdata\visual studio 2010\projects\otpwriterpro\otpwriterpro\hgz\hgzcombobox.h"
 
 
 
@@ -71,8 +73,8 @@ public:
 		_tprintf( _T("---ERROR %s(%ld): %s/n"), file, line, (LPCTSTR)lpMsgBuf );
 		LocalFree( lpMsgBuf );
 	}
-    afx_msg void OnBnClickedButton1();
-    afx_msg void OnBnClickedButton2();
+    //afx_msg void OnBnClickedButton1();
+    //afx_msg void OnBnClickedButton2();
     //--------------------------------
     
     CButton m_ctrlErase;
@@ -132,14 +134,21 @@ public:
     } while (0)*/
     unsigned int GetStartAddress();
     unsigned int GetDataLength();
+    unsigned int GetStartIgnoreAddress();
+    unsigned int GetEndIgnoreAddress();
     UINT8 GetDataToFillBuffer();
     void UpdateBufferDisplay( unsigned int addr, unsigned int length );
     void Cmd1Data0( CHgzMem::pMemFunc_Cmd1Data0 CmdFunc, CString s );
 
 
-    CButton m_bnTEST1;
-    CButton m_bnTEST2;
+    //CButton m_bnTEST1;
+    //CButton m_bnTEST2;
     CButton m_bnFind;
+    CHgzComboBox m_ctrlIgnoreMemBegin;
+    CHgzComboBox m_ctrlIgnoreMemEnd;
+    CButton m_ctrlIgnoreMem;
+    CButton m_ctrlWrite;
+    CButton m_ctrlEncrypt;
 };
 
 

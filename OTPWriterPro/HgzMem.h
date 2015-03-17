@@ -38,6 +38,7 @@ public:
     INT32 Write(UINT32 addr, UINT32 length);
     INT32 Read(UINT32 addr, UINT32 length);
     BOOL Verify(UINT32 addr, UINT32 length);
+    BOOL VerifyEx(UINT32 addr, UINT32 length, UINT32 addrIgnoreBegin, UINT32 addrIgnoreEnd);
     BOOL Encryt( UINT32 &res );
     BOOL IsEncyption(void);
     BOOL Erease(UINT32 &startSectorNum, UINT32 &endSectorNum);
@@ -59,6 +60,7 @@ public:
 
 private:
     INT CompareMemData( CHidReport &r, UINT8 *pBuf );
+    INT CompareMemDataEx( CHidReport &r, UINT8 *pBuf, UINT32 addrIgnoreBegin, UINT32 addrIgnoreEnd );
     BOOL ExecuteMemCmd( CHidReport &r, UINT32 *res = NULL );
     BOOL ExecuteMemCmd_Cmd1Data0(UINT8 cmd, UINT32 *res = NULL);
     BOOL ExecuteCmd_Cmd1Datax(UINT8 cmd, UINT8 dataLen, UINT8 *pData, UINT32 *res = NULL);

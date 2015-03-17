@@ -82,17 +82,22 @@ void COTPWriterProDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_CHECK4, m_chkFillBufferAll);
     DDX_Control(pDX, IDC_CHECK5, m_chkClearBufferAll);
     DDX_Control(pDX, IDC_CHECK_LENGTH_HEX, m_chkDataLen);
-    DDX_Control(pDX, IDC_BUTTON1, m_bnTEST1);
-    DDX_Control(pDX, IDC_BUTTON2, m_bnTEST2);
+    //DDX_Control(pDX, IDC_BUTTON1, m_bnTEST1);
+    //DDX_Control(pDX, IDC_BUTTON2, m_bnTEST2);
     DDX_Control(pDX, IDC_BUTTON22, m_bnFind);
+    DDX_Control(pDX, IDC_COMBO8, m_ctrlIgnoreMemBegin);
+    DDX_Control(pDX, IDC_COMBO9, m_ctrlIgnoreMemEnd);
+    DDX_Control(pDX, IDC_CHECK3, m_ctrlIgnoreMem);
+    DDX_Control(pDX, IDC_BUTTON6, m_ctrlWrite);
+    DDX_Control(pDX, IDC_BUTTON10, m_ctrlEncrypt);
 }
 
 BEGIN_MESSAGE_MAP(COTPWriterProDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_BN_CLICKED(IDC_BUTTON1, &COTPWriterProDlg::OnBnClickedButton1)
-	ON_BN_CLICKED(IDC_BUTTON2, &COTPWriterProDlg::OnBnClickedButton2)
+	//ON_BN_CLICKED(IDC_BUTTON1, &COTPWriterProDlg::OnBnClickedButton1)
+	//ON_BN_CLICKED(IDC_BUTTON2, &COTPWriterProDlg::OnBnClickedButton2)
 	ON_BN_CLICKED(IDC_BUTTON7, &COTPWriterProDlg::OnBnClickedButtonRead)
 	ON_WM_TIMER()
 	ON_BN_CLICKED(IDC_BUTTON6, &COTPWriterProDlg::OnBnClickedButtonWrite)
@@ -154,7 +159,9 @@ BOOL COTPWriterProDlg::OnInitDialog()
 	m_ctrlChipSel.SetCurSel(0);
 	m_ctrlMemAddrBegin.SetWindowText(_T("0000"));
 	m_ctrlDataLength.SetWindowText(_T("16384"));
-
+    m_ctrlIgnoreMem.SetCheck(TRUE);
+    m_ctrlIgnoreMemBegin.SetWindowText(_T("1FF0"));
+    m_ctrlIgnoreMemEnd.SetWindowText(_T("1FFF"));
 
 	m_ctrlProgress.SetRange(0, 100);
 	m_ctrlProgress.SetPos(0);
@@ -190,13 +197,16 @@ BOOL COTPWriterProDlg::OnInitDialog()
         hgzOpenConsole();
 
     m_ChipType = HS__CMD__CHIP_TYPE__OTP__HS6206;
-
-
+    
 	// Start a periodic read IRP to timely receive datas from device.
 	//SetTimer(1, 1, NULL);
     m_bnFind.EnableWindow(FALSE);
-    m_bnTEST1.EnableWindow(FALSE);
-    m_bnTEST2.EnableWindow(FALSE);
+    //m_bnTEST1.EnableWindow(FALSE);
+    //m_bnTEST2.EnableWindow(FALSE);
+    m_ctrlWrite.EnableWindow(FALSE);
+    m_ctrlErase.EnableWindow(FALSE);
+    m_ctrlEncrypt.EnableWindow(FALSE);
+
 
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
@@ -262,224 +272,224 @@ void COTPWriterProDlg::PostNcDestroy()
 }
 
 //--------------------------
-void COTPWriterProDlg::OnBnClickedButton1()
-{
-	// use HIDAPI
-	int res;
-	unsigned char buf[256];
-	#define MAX_STR 255
-	wchar_t wstr[MAX_STR];
-	hid_device *handle;
-	int i;
-
-	struct hid_device_info *devs, *cur_dev;
-
-	if (hid_init())
-		return;
-
-	devs = hid_enumerate(0x0, 0x0);
-	cur_dev = devs;	
-	while (cur_dev) {
-		_tprintf(_T("Device Found\n  type: %04hx %04hx\n  path: %s\n  serial_number: %ls"), cur_dev->vendor_id, cur_dev->product_id, cur_dev->path, cur_dev->serial_number);
-		_tprintf(_T("\n"));
-		_tprintf(_T("  Manufacturer: %ls\n"), cur_dev->manufacturer_string);
-		_tprintf(_T("  Product:      %ls\n"), cur_dev->product_string);
-		_tprintf(_T("  Release:      %hx\n"), cur_dev->release_number);
-		_tprintf(_T("  Interface:    %d\n"),  cur_dev->interface_number);
-		_tprintf(_T("\n"));
-		cur_dev = cur_dev->next;
-	}
-	hid_free_enumeration(devs);
-
-
-	// Open the device using the VID, PID,
-	// and optionally the Serial number.
-	////handle = hid_open(0x4d8, 0x3f, L"12345");
-	//handle = hid_open(0x4d8, 0x3f, NULL);
-	handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
-	if (!handle) {
-		_tprintf(_T("unable to open device\n"));
-		return;
-	}
-
-	// Read the Manufacturer String
-	wstr[0] = 0x0000;
-	res = hid_get_manufacturer_string(handle, wstr, MAX_STR);
-	if (res < 0)
-		_tprintf(_T("Unable to read manufacturer string\n"));
-	_tprintf(_T("Manufacturer String: %ls\n"), wstr);
-
-	// Read the Product String
-	wstr[0] = 0x0000;
-	res = hid_get_product_string(handle, wstr, MAX_STR);
-	if (res < 0)
-		_tprintf(_T("Unable to read product string\n"));
-	_tprintf(_T("Product String: %ls\n"), wstr);
-
-	// Read the Serial Number String
-	wstr[0] = 0x0000;
-	res = hid_get_serial_number_string(handle, wstr, MAX_STR);
-	if (res < 0)
-		_tprintf(_T("Unable to read serial number string\n"));
-	_tprintf(_T("Serial Number String: (%d) %ls"), wstr[0], wstr);
-	_tprintf(_T("\n"));
-
-	// Read Indexed String 1
-	wstr[0] = 0x0000;
-	res = hid_get_indexed_string(handle, 1, wstr, MAX_STR);
-	if (res < 0)
-		_tprintf(_T("Unable to read indexed string 1\n"));
-	_tprintf(_T("Indexed String 1: %ls\n"), wstr);
-
-	// Set the hid_read() function to be non-blocking.
-	hid_set_nonblocking(handle, 1);
-
-	// Set up the command buffer.
-	memset(buf,0x00,sizeof(buf));
-	buf[0] = 0x01;
-	buf[1] = 0x81;
-
-	// Try to read from the device. There shoud be no
-	// data here, but execution should not block.
-	res = hid_read(handle, buf, 17);
-
-	// Send a Feature Report to the device
-	buf[0] = 0x2;
-	buf[1] = 0xa0;
-	buf[2] = 0x0a;
-	buf[3] = 0x00;
-	buf[4] = 0x00;
-	res = hid_send_feature_report(handle, buf, 17);
-	if (res < 0) {
-		_tprintf(_T("Unable to send a feature report.\n"));
-	}
-
-	memset(buf,0,sizeof(buf));
-
-	// Read a Feature Report from the device
-	buf[0] = 0x2;
-	res = hid_get_feature_report(handle, buf, sizeof(buf));
-	if (res < 0) {
-		_tprintf(_T("Unable to get a feature report.\n"));
-		_tprintf(_T("%ls"), hid_error(handle));
-	}
-	else {
-		// Print out the returned buffer.
-		_tprintf(_T("Feature Report\n   "));
-		for (i = 0; i < res; i++)
-			_tprintf(_T("%02hhx "), buf[i]);
-		_tprintf(_T("\n"));
-	}
-
-	memset(buf,0,sizeof(buf));
-
-	// Toggle LED (cmd 0x80). The first byte is the report number (0x1).
-	buf[0] = 0x1;
-	buf[1] = 0x80;
-	res = hid_write(handle, buf, 17);
-	if (res < 0) {
-		_tprintf(_T("Unable to write()\n"));
-		_tprintf(_T("Error: %ls\n"), hid_error(handle));
-	}
-
-
-	// Request state (cmd 0x81). The first byte is the report number (0x1).
-	buf[0] = 0x1;
-	buf[1] = 0x81;
-	hid_write(handle, buf, 17);
-	if (res < 0)
-		_tprintf(_T("Unable to write() (2)\n"));
-
-	hid_close(handle);
-
-	/* Free static HIDAPI objects. */
-	hid_exit();
-
-}
-
-void COTPWriterProDlg::OnBnClickedButton2()
-{
-	// 1. 查找本系统中HID类的GUID标识
-	GUID guidHID;
-	HidD_GetHidGuid( &guidHID );
-	CString s;
-	s.Format( _T("HID 类的 GUID 标识: {%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X}\r\n")
-		, guidHID.Data1, guidHID.Data2, guidHID.Data3
-		, guidHID.Data4[0], guidHID.Data4[1], guidHID.Data4[2], guidHID.Data4[3]
-		, guidHID.Data4[4], guidHID.Data4[5], guidHID.Data4[6], guidHID.Data4[7] );
-
-	// 2. 获取设备信息，得到设备信息集的句柄
-	s += _T("正在查找可用的 HID 设备...\r\n");
-	HDEVINFO hDevInfo = SetupDiGetClassDevs( &guidHID, NULL/*_T("USB")*/, 0, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE );
-	if( INVALID_HANDLE_VALUE == hDevInfo ) {
-		s += _T("无法找到设备信息集的句柄...\r\n");
-		_tprintf_s(_T("%s"), s);
-		//std::tcout << s;
-		//m_ctrlHid2.SetWindowText(s);
-		ShowError();
-		return;
-	}
-
-	// 3. 遍历设备信息集中所有设备接口，得到其详细信息
-	SP_DEVICE_INTERFACE_DATA InterfaceData = { sizeof(SP_DEVICE_INTERFACE_DATA) };
-	for( DWORD index = 0; SetupDiEnumDeviceInterfaces(hDevInfo, NULL, &guidHID, index, &InterfaceData); ++index )
-	{
-		/*
-		Using function SetupDiGetDeviceInterfaceDetail() to get details about an interface is typically a two-step process:
-		1. Get the required buffer size. 
-		   Call SetupDiGetDeviceInterfaceDetail with a NULLDeviceInterfaceDetailData pointer, a DeviceInterfaceDetailDataSize of zero, and a valid RequiredSize variable. 
-		   In response to such a call, this function returns the required buffer size at RequiredSize and fails with GetLastError returning ERROR_INSUFFICIENT_BUFFER.
-		2. Allocate an appropriately sized buffer and call the function again to get the interface details.
-		*/
-		DWORD dwRequiredSize = 0;
-		SetupDiGetDeviceInterfaceDetail(hDevInfo, &InterfaceData, NULL, 0, &dwRequiredSize, NULL); 
-		PSP_DEVICE_INTERFACE_DETAIL_DATA pDetail;
-		pDetail = (PSP_DEVICE_INTERFACE_DETAIL_DATA) malloc(dwRequiredSize); // create buffer of required size
-		pDetail->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
-		if( !SetupDiGetDeviceInterfaceDetail(hDevInfo, &InterfaceData, pDetail, dwRequiredSize, NULL, NULL) ) {
-			ShowError();
-			free(pDetail);
-			continue;
-		}
-
-		s.AppendFormat( _T("[%d] path: %s\r\n"), index, pDetail->DevicePath );
-
-		HANDLE hUsb = CreateFile( pDetail->DevicePath, 0//GENERIC_READ|GENERIC_WRITE
-			, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL );
-		if( INVALID_HANDLE_VALUE == hUsb ) {
-			s += _T("无法打开端口。");
-			_tprintf_s(_T("%s"), s);
-			std::tcout << s;
-			//m_ctrlHid2.SetWindowText(s);
-			SetupDiDestroyDeviceInfoList( hDevInfo );
-			free( pDetail );
-			return;
-		}
-
-		// 查询设备标识
-		HIDD_ATTRIBUTES strtAttrib = { sizeof(HIDD_ATTRIBUTES) };
-		if( HidD_GetAttributes(hUsb,&strtAttrib) )
-		{
-			s.AppendFormat( _T("VendorID:\t%hX\r\n"), strtAttrib.VendorID );
-			s.AppendFormat( _T("ProductID:\t%hX\r\n"), strtAttrib.ProductID );
-			s.AppendFormat( _T("VerNumber:\t%hX\r\n"), strtAttrib.VersionNumber );
-		}
-		else
-			ShowError();
-
-		CloseHandle( hUsb );
-		free( pDetail );
-	}
-	
-	if( GetLastError() != ERROR_NO_MORE_ITEMS )
-		ShowError();
-
-	_tprintf_s(_T("%s"), s);
-	//std::tcout << s;
-	//m_ctrlHid2.SetWindowText(s);
-	SetupDiDestroyDeviceInfoList( hDevInfo );
-}
-//--------------------------
+//void COTPWriterProDlg::OnBnClickedButton1()
+//{
+//	// use HIDAPI
+//	int res;
+//	unsigned char buf[256];
+//	#define MAX_STR 255
+//	wchar_t wstr[MAX_STR];
+//	hid_device *handle;
+//	int i;
+//
+//	struct hid_device_info *devs, *cur_dev;
+//
+//	if (hid_init())
+//		return;
+//
+//	devs = hid_enumerate(0x0, 0x0);
+//	cur_dev = devs;	
+//	while (cur_dev) {
+//		_tprintf(_T("Device Found\n  type: %04hx %04hx\n  path: %s\n  serial_number: %ls"), cur_dev->vendor_id, cur_dev->product_id, cur_dev->path, cur_dev->serial_number);
+//		_tprintf(_T("\n"));
+//		_tprintf(_T("  Manufacturer: %ls\n"), cur_dev->manufacturer_string);
+//		_tprintf(_T("  Product:      %ls\n"), cur_dev->product_string);
+//		_tprintf(_T("  Release:      %hx\n"), cur_dev->release_number);
+//		_tprintf(_T("  Interface:    %d\n"),  cur_dev->interface_number);
+//		_tprintf(_T("\n"));
+//		cur_dev = cur_dev->next;
+//	}
+//	hid_free_enumeration(devs);
+//
+//
+//	// Open the device using the VID, PID,
+//	// and optionally the Serial number.
+//	////handle = hid_open(0x4d8, 0x3f, L"12345");
+//	//handle = hid_open(0x4d8, 0x3f, NULL);
+//	handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
+//	if (!handle) {
+//		_tprintf(_T("unable to open device\n"));
+//		return;
+//	}
+//
+//	// Read the Manufacturer String
+//	wstr[0] = 0x0000;
+//	res = hid_get_manufacturer_string(handle, wstr, MAX_STR);
+//	if (res < 0)
+//		_tprintf(_T("Unable to read manufacturer string\n"));
+//	_tprintf(_T("Manufacturer String: %ls\n"), wstr);
+//
+//	// Read the Product String
+//	wstr[0] = 0x0000;
+//	res = hid_get_product_string(handle, wstr, MAX_STR);
+//	if (res < 0)
+//		_tprintf(_T("Unable to read product string\n"));
+//	_tprintf(_T("Product String: %ls\n"), wstr);
+//
+//	// Read the Serial Number String
+//	wstr[0] = 0x0000;
+//	res = hid_get_serial_number_string(handle, wstr, MAX_STR);
+//	if (res < 0)
+//		_tprintf(_T("Unable to read serial number string\n"));
+//	_tprintf(_T("Serial Number String: (%d) %ls"), wstr[0], wstr);
+//	_tprintf(_T("\n"));
+//
+//	// Read Indexed String 1
+//	wstr[0] = 0x0000;
+//	res = hid_get_indexed_string(handle, 1, wstr, MAX_STR);
+//	if (res < 0)
+//		_tprintf(_T("Unable to read indexed string 1\n"));
+//	_tprintf(_T("Indexed String 1: %ls\n"), wstr);
+//
+//	// Set the hid_read() function to be non-blocking.
+//	hid_set_nonblocking(handle, 1);
+//
+//	// Set up the command buffer.
+//	memset(buf,0x00,sizeof(buf));
+//	buf[0] = 0x01;
+//	buf[1] = 0x81;
+//
+//	// Try to read from the device. There shoud be no
+//	// data here, but execution should not block.
+//	res = hid_read(handle, buf, 17);
+//
+//	// Send a Feature Report to the device
+//	buf[0] = 0x2;
+//	buf[1] = 0xa0;
+//	buf[2] = 0x0a;
+//	buf[3] = 0x00;
+//	buf[4] = 0x00;
+//	res = hid_send_feature_report(handle, buf, 17);
+//	if (res < 0) {
+//		_tprintf(_T("Unable to send a feature report.\n"));
+//	}
+//
+//	memset(buf,0,sizeof(buf));
+//
+//	// Read a Feature Report from the device
+//	buf[0] = 0x2;
+//	res = hid_get_feature_report(handle, buf, sizeof(buf));
+//	if (res < 0) {
+//		_tprintf(_T("Unable to get a feature report.\n"));
+//		_tprintf(_T("%ls"), hid_error(handle));
+//	}
+//	else {
+//		// Print out the returned buffer.
+//		_tprintf(_T("Feature Report\n   "));
+//		for (i = 0; i < res; i++)
+//			_tprintf(_T("%02hhx "), buf[i]);
+//		_tprintf(_T("\n"));
+//	}
+//
+//	memset(buf,0,sizeof(buf));
+//
+//	// Toggle LED (cmd 0x80). The first byte is the report number (0x1).
+//	buf[0] = 0x1;
+//	buf[1] = 0x80;
+//	res = hid_write(handle, buf, 17);
+//	if (res < 0) {
+//		_tprintf(_T("Unable to write()\n"));
+//		_tprintf(_T("Error: %ls\n"), hid_error(handle));
+//	}
+//
+//
+//	// Request state (cmd 0x81). The first byte is the report number (0x1).
+//	buf[0] = 0x1;
+//	buf[1] = 0x81;
+//	hid_write(handle, buf, 17);
+//	if (res < 0)
+//		_tprintf(_T("Unable to write() (2)\n"));
+//
+//	hid_close(handle);
+//
+//	/* Free static HIDAPI objects. */
+//	hid_exit();
+//
+//}
+//
+//void COTPWriterProDlg::OnBnClickedButton2()
+//{
+//	// 1. 查找本系统中HID类的GUID标识
+//	GUID guidHID;
+//	HidD_GetHidGuid( &guidHID );
+//	CString s;
+//	s.Format( _T("HID 类的 GUID 标识: {%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X}\r\n")
+//		, guidHID.Data1, guidHID.Data2, guidHID.Data3
+//		, guidHID.Data4[0], guidHID.Data4[1], guidHID.Data4[2], guidHID.Data4[3]
+//		, guidHID.Data4[4], guidHID.Data4[5], guidHID.Data4[6], guidHID.Data4[7] );
+//
+//	// 2. 获取设备信息，得到设备信息集的句柄
+//	s += _T("正在查找可用的 HID 设备...\r\n");
+//	HDEVINFO hDevInfo = SetupDiGetClassDevs( &guidHID, NULL/*_T("USB")*/, 0, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE );
+//	if( INVALID_HANDLE_VALUE == hDevInfo ) {
+//		s += _T("无法找到设备信息集的句柄...\r\n");
+//		_tprintf_s(_T("%s"), s);
+//		//std::tcout << s;
+//		//m_ctrlHid2.SetWindowText(s);
+//		ShowError();
+//		return;
+//	}
+//
+//	// 3. 遍历设备信息集中所有设备接口，得到其详细信息
+//	SP_DEVICE_INTERFACE_DATA InterfaceData = { sizeof(SP_DEVICE_INTERFACE_DATA) };
+//	for( DWORD index = 0; SetupDiEnumDeviceInterfaces(hDevInfo, NULL, &guidHID, index, &InterfaceData); ++index )
+//	{
+//		/*
+//		Using function SetupDiGetDeviceInterfaceDetail() to get details about an interface is typically a two-step process:
+//		1. Get the required buffer size. 
+//		   Call SetupDiGetDeviceInterfaceDetail with a NULLDeviceInterfaceDetailData pointer, a DeviceInterfaceDetailDataSize of zero, and a valid RequiredSize variable. 
+//		   In response to such a call, this function returns the required buffer size at RequiredSize and fails with GetLastError returning ERROR_INSUFFICIENT_BUFFER.
+//		2. Allocate an appropriately sized buffer and call the function again to get the interface details.
+//		*/
+//		DWORD dwRequiredSize = 0;
+//		SetupDiGetDeviceInterfaceDetail(hDevInfo, &InterfaceData, NULL, 0, &dwRequiredSize, NULL); 
+//		PSP_DEVICE_INTERFACE_DETAIL_DATA pDetail;
+//		pDetail = (PSP_DEVICE_INTERFACE_DETAIL_DATA) malloc(dwRequiredSize); // create buffer of required size
+//		pDetail->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+//		if( !SetupDiGetDeviceInterfaceDetail(hDevInfo, &InterfaceData, pDetail, dwRequiredSize, NULL, NULL) ) {
+//			ShowError();
+//			free(pDetail);
+//			continue;
+//		}
+//
+//		s.AppendFormat( _T("[%d] path: %s\r\n"), index, pDetail->DevicePath );
+//
+//		HANDLE hUsb = CreateFile( pDetail->DevicePath, 0//GENERIC_READ|GENERIC_WRITE
+//			, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL );
+//		if( INVALID_HANDLE_VALUE == hUsb ) {
+//			s += _T("无法打开端口。");
+//			_tprintf_s(_T("%s"), s);
+//			std::tcout << s;
+//			//m_ctrlHid2.SetWindowText(s);
+//			SetupDiDestroyDeviceInfoList( hDevInfo );
+//			free( pDetail );
+//			return;
+//		}
+//
+//		// 查询设备标识
+//		HIDD_ATTRIBUTES strtAttrib = { sizeof(HIDD_ATTRIBUTES) };
+//		if( HidD_GetAttributes(hUsb,&strtAttrib) )
+//		{
+//			s.AppendFormat( _T("VendorID:\t%hX\r\n"), strtAttrib.VendorID );
+//			s.AppendFormat( _T("ProductID:\t%hX\r\n"), strtAttrib.ProductID );
+//			s.AppendFormat( _T("VerNumber:\t%hX\r\n"), strtAttrib.VersionNumber );
+//		}
+//		else
+//			ShowError();
+//
+//		CloseHandle( hUsb );
+//		free( pDetail );
+//	}
+//	
+//	if( GetLastError() != ERROR_NO_MORE_ITEMS )
+//		ShowError();
+//
+//	_tprintf_s(_T("%s"), s);
+//	//std::tcout << s;
+//	//m_ctrlHid2.SetWindowText(s);
+//	SetupDiDestroyDeviceInfoList( hDevInfo );
+//}
+////--------------------------
 
 
 void COTPWriterProDlg::OnBnClickedButtonOpenFile()
@@ -566,6 +576,9 @@ void COTPWriterProDlg::OnBnClickedButtonOpenFile()
 
     //UpdateBufferShow();
     UpdateBufferDisplay(0, max(nOldSize, g_mem.SizeUsed()));
+    m_ctrlMemAddrBegin.SetWindowText(_T("0000"));
+    m_ctrlDataLength.SetWindowsTextFormat(_T("%d"), g_mem.SizeUsed());
+
 }
 
 void COTPWriterProDlg::OnBnClickedButtonSaveAs()
@@ -688,7 +701,7 @@ void COTPWriterProDlg::OnBnClickedButtonRead()
 void COTPWriterProDlg::OnBnClickedButtonVerify()
 {
     PrintCurrentTime();
-    if (g_mem.Verify(GetStartAddress(), GetDataLength()))
+    if (m_ctrlIgnoreMem.GetCheck() ? g_mem.VerifyEx(GetStartAddress(), GetDataLength(), GetStartIgnoreAddress(), GetEndIgnoreAddress()) : g_mem.Verify(GetStartAddress(), GetDataLength()))
         EditCtrlOutput(0, _T("校验成功！\r\n"));
     else
         EditCtrlOutput(0, _T("校验失败！\r\n"));
@@ -814,6 +827,25 @@ unsigned int COTPWriterProDlg::GetDataLength()
 	return length;
 }
 
+unsigned int COTPWriterProDlg::GetStartIgnoreAddress()
+{
+    CString s;
+
+    m_ctrlIgnoreMemBegin.GetWindowText(s);
+    unsigned int start_addr = s.GetLength() ? stoul((tstring)s.GetString(), 0, 16) : 0;
+
+    return start_addr;
+}
+
+unsigned int COTPWriterProDlg::GetEndIgnoreAddress()
+{
+    CString s;
+
+    m_ctrlIgnoreMemEnd.GetWindowText(s);
+    unsigned int start_addr = s.GetLength() ? stoul((tstring)s.GetString(), 0, 16) : 0;
+
+    return start_addr;
+}
 
 void COTPWriterProDlg::OnBnClickedButtonBlankCheck()
 {
@@ -947,7 +979,7 @@ void COTPWriterProDlg::OnCbnSelchangeComboSelectChipType()
 
     CString s;
     m_ctrlChipSel.GetLBText(m_ctrlChipSel.GetCurSel(), s);
-
+    
     if (s.IsEmpty())
         m_ChipType = HS__CMD__CHIP_TYPE__NONE;
     else if (s.Compare(_T("HS6206")) == 0)
@@ -958,11 +990,12 @@ void COTPWriterProDlg::OnCbnSelchangeComboSelectChipType()
         m_ChipType = HS__CMD__CHIP_TYPE__NONE;
 
     HS_CHIP_TYPE_t chipType = m_ChipType;
-    CString str(_T("设定芯片型号"));
+    CString str(_T("设定芯片型号: "));
+    str += s;
     if (g_mem.SetChipType(&chipType) && chipType == m_ChipType)
-        str += _T("成功！\r\n");
+        str += _T(" -- 成功！\r\n");
     else
-        str += _T("失败！\r\n");
+        str += _T(" -- 失败！\r\n");
 
     EditCtrlOutput(0, str.GetString());
 }

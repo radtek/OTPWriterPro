@@ -299,6 +299,101 @@ BOOL CHgzMem::Verify( UINT32 addr, UINT32 length )
     return res;
 }
 
+
+BOOL CHgzMem::VerifyEx( UINT32 addr, UINT32 length, UINT32 addrIgnoreBegin, UINT32 addrIgnoreEnd )
+{
+    if (IsEmpty()) {
+        AfxMessageBox(_T("There's no data in the buffer to verify."));
+        return FALSE;
+    }
+
+    // Open the device using the VID, PID, and optionally the Serial number.
+    hid_device *handle = hid_open(HS_VENDOR_ID, HS_PRODUCT_ID_OTPWRITER, NULL);
+    if (!handle) {
+        _tprintf(_T("unable to open device\n"));
+        return FALSE;
+    }
+
+    BOOL res = TRUE; // return value;
+    CHidReport r;
+
+    INT reportLen = 52;
+    for (UINT32 num = 0; num < length; num += reportLen)
+    {
+        if (!r.MemReadReport(addr+num, min(reportLen, length-num)))
+        {
+            res = FALSE;
+            break;
+        }
+
+        if (r.SendReport(handle) < 0)
+        {
+            res = FALSE;
+            break;
+        }
+
+        if (r.ReceiveReport(handle) < 0)
+        {
+            res = FALSE;
+            break;
+        }
+
+        unsigned int dataLen = hgzRevertByteOrder32(r.m_pkt.memPkt.dataLen);
+        unsigned int address = hgzRevertByteOrder32(r.m_pkt.memPkt.addr);
+        if (dataLen == 0) 
+        {
+            res = TRUE;
+            break;
+        }
+
+        CHidReport r1;
+        if (!r1.MemReadReport(addr+num, reportLen))
+        {
+            res = FALSE;
+            break;
+        }
+
+        if (r1.ReceiveReport(handle) < 0) // 数据长度为 0 的终止包，每个读一个。
+        {
+            res = FALSE;
+            break;
+        }
+
+        // compare readout report data with the buf
+        int err = -1;
+        if ((err = CompareMemDataEx(r, m_buf.GetData(), addrIgnoreBegin, addrIgnoreEnd)) != -1)
+        {
+            res = FALSE;
+            UINT errAddr = addr + num + err;
+            CString s;
+            s.Format(_T("Verification fails!\r\n (addr | mem_data | buffer_data): %08X | %02X | %02X\r\n"), errAddr, r.m_pkt.memPkt.data[err], errAddr < g_mem.SizeUsed() ? m_buf[errAddr] : 0x00);
+            tcout << s.GetString();
+            AfxMessageBox(s);
+            break;
+        }
+
+        g_pctrlProgress->SetPos(num*100/length);
+
+        Sleep(20);
+    }
+
+    hid_close(handle); /* Free handle objects. */
+    hid_exit(); /* Free static HIDAPI objects. */
+
+    if (res)
+    {
+        g_pctrlProgress->SetPos(100);
+        _tprintf(_T("Verification succeeds!"));
+        AfxMessageBox(_T("Verification succeeds!"));
+    }
+    else
+    {
+
+    }
+    return res;
+}
+
+
 BOOL CHgzMem::Encryt( UINT32 &res )
 {
     return ExecuteMemCmd_Cmd1Data0(HS__MEM__ACCESS_DISABLE, &res);
@@ -362,6 +457,26 @@ INT CHgzMem::CompareMemData( CHidReport &r, UINT8 *pBuf )
     for (int i = 0; i < dataLen ; i++)
     {
         UINT addr = address + i;
+
+        if (r.m_pkt.memPkt.data[i] != (addr < g_mem.SizeUsed() ? pBuf[addr] : 0)) {
+            return i; // index of the first error byte in the report data field.
+        }
+    }
+
+    return -1; // successful
+}
+
+INT CHgzMem::CompareMemDataEx( CHidReport &r, UINT8 *pBuf, UINT32 addrIgnoreBegin, UINT32 addrIgnoreEnd )
+{
+    UINT dataLen = hgzRevertByteOrder32(r.m_pkt.memPkt.dataLen);
+    UINT address = hgzRevertByteOrder32(r.m_pkt.memPkt.addr);
+
+    for (int i = 0; i < dataLen ; i++)
+    {
+        UINT addr = address + i;
+        
+        if (addr>=addrIgnoreBegin && addr<=addrIgnoreEnd)
+            continue;
 
         if (r.m_pkt.memPkt.data[i] != (addr < g_mem.SizeUsed() ? pBuf[addr] : 0)) {
             return i; // index of the first error byte in the report data field.
