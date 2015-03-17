@@ -203,9 +203,9 @@ BOOL COTPWriterProDlg::OnInitDialog()
     m_bnFind.EnableWindow(FALSE);
     //m_bnTEST1.EnableWindow(FALSE);
     //m_bnTEST2.EnableWindow(FALSE);
-    m_ctrlWrite.EnableWindow(FALSE);
-    m_ctrlErase.EnableWindow(FALSE);
-    m_ctrlEncrypt.EnableWindow(FALSE);
+    //m_ctrlWrite.EnableWindow(FALSE);
+    //m_ctrlErase.EnableWindow(FALSE);
+    //m_ctrlEncrypt.EnableWindow(FALSE);
 
 
 
