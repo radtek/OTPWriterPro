@@ -5,6 +5,9 @@
 #define HS_VENDOR_ID					0x0483
 #define HS_PRODUCT_ID_OTPWRITER			0x5710
 
+#define HS_6600_VENDOR_ID			    0xF012
+#define HS_6600_PRODUCT_ID_OTPWRITER    0x6600
+
 #define HS_OTPWRITER_HID_REPORT_SIZE	64
 #define HS_OTPWRITER_HID_USAGE_PAGE		0xFF99
 #define HS_OTPWRITER_HID_USAGE_PAGEH	0xFF
@@ -135,9 +138,27 @@ f. 通信协议说明：
 #define HS__CMD__GET__CHIP_TYPE      0x02    // H2D, D2H: <LEN(1), CSB(1), HS__CMD(1), HS__CMD__GET__CHIP_TYPE(1), Data(0..1)>
 typedef enum _HS_CHIP_TYPE_t {
     HS__CMD__CHIP_TYPE__NONE           =    0x00,
+    
+    // OTP
     HS__CMD__CHIP_TYPE__OTP__HS6206    =    0x01,
-    HS__CMD__CHIP_TYPE__FLASH__EN25T80 =    0x81
+    HS__CMD__CHIP_TYPE__EEPROM_HS66XX  =    0x02,
+    
+    // FPGA
+    HS__CMD__CHIP_TYPE__FPGA__HS6206   =    0x41,
+
+    // Flash
+    HS__CMD__CHIP_TYPE__FLASH__EN25T80 =    0x81,
+    HS__CMD__CHIP_TYPE__FLASH_HS66XX   =    0x82
+    
 } HS_CHIP_TYPE_t;
+
+typedef enum _HS_MEM_TYPE_t {
+    MEM_TYPE_NONE           =    0x00,
+    MEM_TYPE_FLASH          =    0x01,
+    MEM_TYPE_EEPROM         =    0x02,
+    MEM_TYPE_OTP            =    0x03
+} HS_MEM_TYPE_t;
+
 #define HS__CMD__GET__FIRMWARE_VERSION      0x03    // H2D, D2H: <LEN(1), CSB(1), HS__CMD(1), HS__CMD__GET__FIRMWARE_VERSION(1), Data(0..61)>
 
 

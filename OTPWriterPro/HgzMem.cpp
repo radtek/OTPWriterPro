@@ -290,7 +290,7 @@ BOOL CHgzMem::Verify( UINT32 addr, UINT32 length )
     {
         g_pctrlProgress->SetPos(100);
         _tprintf(_T("Verification succeeds!"));
-        AfxMessageBox(_T("Verification succeeds!"));
+        //AfxMessageBox(_T("Verification succeeds!"));
     }
     else
     {
@@ -384,7 +384,7 @@ BOOL CHgzMem::VerifyEx( UINT32 addr, UINT32 length, UINT32 addrIgnoreBegin, UINT
     {
         g_pctrlProgress->SetPos(100);
         _tprintf(_T("Verification succeeds!"));
-        AfxMessageBox(_T("Verification succeeds!"));
+        //AfxMessageBox(_T("Verification succeeds!"));
     }
     else
     {

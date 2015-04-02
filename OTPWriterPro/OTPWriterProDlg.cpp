@@ -90,6 +90,9 @@ void COTPWriterProDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_CHECK3, m_ctrlIgnoreMem);
     DDX_Control(pDX, IDC_BUTTON6, m_ctrlWrite);
     DDX_Control(pDX, IDC_BUTTON10, m_ctrlEncrypt);
+    DDX_Control(pDX, IDC_CHECK7, m_ctrlEnableRollnumWrite);
+    DDX_Control(pDX, IDC_BUTTON1, m_ctrlAuto);
+    DDX_Control(pDX, IDC_COMBO7, m_ctrlBufferSearch);
 }
 
 BEGIN_MESSAGE_MAP(COTPWriterProDlg, CDialogEx)
@@ -121,6 +124,11 @@ BEGIN_MESSAGE_MAP(COTPWriterProDlg, CDialogEx)
     ON_BN_CLICKED(IDC_BUTTON3, &COTPWriterProDlg::OnBnClickedButtonDetectChipType)
     ON_BN_CLICKED(IDC_BUTTON21, &COTPWriterProDlg::OnBnClickedButtonVersionNum)
     ON_BN_CLICKED(IDC_CHECK_LENGTH_HEX, &COTPWriterProDlg::OnBnClickedCheckLengthHex)
+    ON_BN_CLICKED(IDC_CHECK7, &COTPWriterProDlg::OnBnClickedCheckEnableRollnumWrite)
+    ON_BN_CLICKED(IDC_BUTTON1, &COTPWriterProDlg::OnBnClickedButtonAuto)
+    ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN1, &COTPWriterProDlg::OnDeltaposSpin1)
+    ON_BN_CLICKED(IDC_BUTTON2, &COTPWriterProDlg::OnBnClickedButtonBufferDataProfile)
+    ON_BN_CLICKED(IDC_BUTTON22, &COTPWriterProDlg::OnBnClickedButtonBufferSearch)
 END_MESSAGE_MAP()
 
 
@@ -159,7 +167,7 @@ BOOL COTPWriterProDlg::OnInitDialog()
 	m_ctrlChipSel.SetCurSel(0);
 	m_ctrlMemAddrBegin.SetWindowText(_T("0000"));
 	m_ctrlDataLength.SetWindowText(_T("16384"));
-    m_ctrlIgnoreMem.SetCheck(TRUE);
+    m_ctrlIgnoreMem.SetCheck(FALSE);
     m_ctrlIgnoreMemBegin.SetWindowText(_T("1FF0"));
     m_ctrlIgnoreMemEnd.SetWindowText(_T("1FFF"));
 
@@ -191,12 +199,12 @@ BOOL COTPWriterProDlg::OnInitDialog()
 
     // Option
     m_Option.m_bEnableConsoleOutput = FALSE;
-    m_Option.m_bWriteBufSizeReallyUsed = FALSE;
+    m_Option.m_bWriteBufSizeReallyUsed = TRUE;
     m_Option.m_nPacketDataLength = 52;
     if (m_Option.m_bEnableConsoleOutput)	
         hgzOpenConsole();
-
-    m_ChipType = HS__CMD__CHIP_TYPE__OTP__HS6206;
+    
+    m_ChipType = HS__CMD__CHIP_TYPE__NONE;
     
 	// Start a periodic read IRP to timely receive datas from device.
 	//SetTimer(1, 1, NULL);
@@ -206,8 +214,24 @@ BOOL COTPWriterProDlg::OnInitDialog()
     //m_ctrlWrite.EnableWindow(FALSE);
     //m_ctrlErase.EnableWindow(FALSE);
     //m_ctrlEncrypt.EnableWindow(FALSE);
+    
+    GetDlgItem(IDC_BUTTON16)->ShowWindow(SW_HIDE); // hide button "Exit OTP SPI Mode"
+    GetDlgItem(IDC_BUTTON17)->ShowWindow(SW_HIDE); // hide button "Enter OTP SPI Mode"
 
+    ((CSpinButtonCtrl*)GetDlgItem(IDC_SPIN1))->SetRange(0, 100);
 
+    // get rollnum settings from Windows Registry
+    TCHAR stemp[1024];
+    GetCurrentDirectory(1024, stemp);
+    m_Option.m_RollnumAndCPConfigDialog.m_CPConfigFilePath.Format(_T("%s"), stemp);
+    s = AfxGetApp()->GetProfileString(_T("Settings"), _T("CPConfigFilePath"));
+    if (s.Find(_T(":")) == -1)
+        m_Option.m_RollnumAndCPConfigDialog.m_CPConfigFilePath += s;
+    else
+        m_Option.m_RollnumAndCPConfigDialog.m_CPConfigFilePath = s;
+
+    m_ctrlEnableRollnumWrite.SetCheck(AfxGetApp()->GetProfileInt(_T("Settings"), _T("EnableRollnum"), 0));
+    OnBnClickedCheckEnableRollnumWrite();
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -579,6 +603,9 @@ void COTPWriterProDlg::OnBnClickedButtonOpenFile()
     m_ctrlMemAddrBegin.SetWindowText(_T("0000"));
     m_ctrlDataLength.SetWindowsTextFormat(_T("%d"), g_mem.SizeUsed());
 
+    // if rollnum enabled, update rollnum region in buffer and display
+    OnBnClickedCheckEnableRollnumWrite();
+
 }
 
 void COTPWriterProDlg::OnBnClickedButtonSaveAs()
@@ -683,7 +710,109 @@ void COTPWriterProDlg::EditCtrlOutput( int pos, const TCHAR *szFormat, ... )
 void COTPWriterProDlg::OnBnClickedButtonWrite()
 {
     PrintCurrentTime();
-    EditCtrlOutput(0, _T("实际写入字节数：%d\r\n"), m_Option.m_bWriteBufSizeReallyUsed ? g_mem.Write(0, g_mem.SizeUsed()) : g_mem.Write(GetStartAddress(), GetDataLength()));
+
+    // check some status to see if it is not ready for writting.
+    // 1. buffer is empty
+    // 2. rollnum enabled but is out of range
+    // 3. rollnum enabled but RF syncode is not correct
+    CString str;
+    str.Empty();
+    if (g_mem.IsEmpty())
+        str.Format(_T("警告！ 缓冲区空，不能烧写。\r\n"));
+    else if (m_ctrlEnableRollnumWrite.GetCheck() && !m_Option.m_RollnumAndCPConfigDialog.IsRollnumValid())
+        str.Format(_T("警告！ 滚码超限 [%08X, %08X]： %08X\r\n"), m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rollnumMin, m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rollnumMax, m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.rollnum);
+    else if (m_ctrlEnableRollnumWrite.GetCheck() && !m_Option.m_RollnumAndCPConfigDialog.IsRFSyncodeValid())
+        str.Format(_T("警告！ RF 同步码无效 [4B, 3B]： %08X, %06X\r\n"), m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.RFSynccode4B, m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.RFSynccode3B);
+
+    if (!str.IsEmpty())
+    {
+        EditCtrlOutput(0, str);
+        AfxMessageBox(str);
+        m_bOK = false;
+        return;
+    }
+    
+    //////////////////////////////////////////////////////////////////////////
+    u32 startAddr = 0, numBytesToWrite = 0, numBytesWritten = 0;
+    if (m_Option.m_bWriteBufSizeReallyUsed)
+    {
+        startAddr = 0;
+        numBytesToWrite = g_mem.SizeUsed();
+    }
+    else
+    {
+        startAddr = GetStartAddress();
+        numBytesToWrite = GetDataLength();
+    }
+
+    // split OTP writting to 2 steps:
+    // step1: write buffer content, which may be splitted into 2 parts by rollnum region
+    // step2: write rollnum region
+
+    CRollnumAndCPConfigDialog::ROLLNUM_RFSynccode_TABLE_t rtable;
+    u32 SizeUsedOld;
+
+    if (m_ctrlEnableRollnumWrite.GetCheck())
+    {
+        if (g_mem.SizeUsed()-1 < m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.OTPAddrForRollnum)
+        { // not overlapped 
+
+        }
+        else if (g_mem.SizeUsed()-1 >= m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.OTPAddrForRollnum+sizeof(m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable))
+        { // complete overlapped
+
+        }
+        else
+        { // partial overlapped
+
+        }
+
+        SizeUsedOld = g_mem.SizeUsed();
+        memcpy (&rtable, g_mem.GetBuf()+m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.OTPAddrForRollnum, sizeof(rtable));
+        g_mem.WriteBuf(m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.OTPAddrForRollnum, (UINT8 *)&m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.rollnum, sizeof(rtable));
+
+    }
+
+
+    EditCtrlOutput(0, _T("需要写入字节数：%d\r\n"), numBytesToWrite);
+    numBytesWritten = g_mem.Write(startAddr, numBytesToWrite);
+    PrintCurrentTime();
+    m_bOK = numBytesWritten == numBytesToWrite;
+    EditCtrlOutput(0, _T("实际写入字节数：%d，%s\r\n"), numBytesWritten, m_bOK ? _T("成功！") : _T("失败！"));
+    
+    if (m_ctrlEnableRollnumWrite.GetCheck())
+    {
+        if (m_bOK)
+        {
+            // display rollnumRFSynccode in OUTPUT
+            PrintCurrentTime();
+            EditCtrlOutput(0, _T("已写入滚码和RF同步码：滚码=0x%08X, RF同步码4B=0x%08X, RF同步码3B=0x%06X\r\n"),
+                m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.rollnum,
+                m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.synccode4b,
+                m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.synccode3b);
+
+            UpdateBufferDisplay(m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.OTPAddrForRollnum, sizeof(rtable));
+
+            // rollnum++, and judge if it is still in rollnum range
+            m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.rollnum++;
+            IsRollnumValid();
+        
+            // write new rollnum to config file
+            m_Option.m_RollnumAndCPConfigDialog.WriteRollnumToConfigFile();
+            
+            // fill buffer's rollnum region with new rollnum and RF synccodes
+            OnBnClickedCheckEnableRollnumWrite();
+        }
+        else
+        {
+            // restore buffer's rollnum region
+            if (m_ctrlEnableRollnumWrite.GetCheck())
+            {
+                g_mem.WriteBuf(m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.OTPAddrForRollnum, (UINT8 *)&rtable.rollnum, sizeof(rtable));
+                g_mem.SizeUsed(SizeUsedOld);
+            }
+        }
+    }
 }
 
 
@@ -693,7 +822,8 @@ void COTPWriterProDlg::OnBnClickedButtonRead()
     
     INT addr = GetStartAddress();
     INT len = GetDataLength();
-    EditCtrlOutput(0, _T("实际读取字节数：%d\r\n"), g_mem.Read(addr, len));
+    EditCtrlOutput(0, _T("读取 ... "));
+    EditCtrlOutput(-7, _T("实际读取字节数：%d\r\n"), g_mem.Read(addr, len));
     UpdateBufferDisplay(addr, len);
 }
 
@@ -701,10 +831,9 @@ void COTPWriterProDlg::OnBnClickedButtonRead()
 void COTPWriterProDlg::OnBnClickedButtonVerify()
 {
     PrintCurrentTime();
-    if (m_ctrlIgnoreMem.GetCheck() ? g_mem.VerifyEx(GetStartAddress(), GetDataLength(), GetStartIgnoreAddress(), GetEndIgnoreAddress()) : g_mem.Verify(GetStartAddress(), GetDataLength()))
-        EditCtrlOutput(0, _T("校验成功！\r\n"));
-    else
-        EditCtrlOutput(0, _T("校验失败！\r\n"));
+    EditCtrlOutput(0, _T("校验 ... "));
+    m_bOK = m_ctrlIgnoreMem.GetCheck() ? g_mem.VerifyEx(GetStartAddress(), GetDataLength(), GetStartIgnoreAddress(), GetEndIgnoreAddress()) : g_mem.Verify(GetStartAddress(), GetDataLength());
+    EditCtrlOutput(-7, m_bOK ? _T("校验成功！\r\n") : _T("校验失败！\r\n"));
 }
 
 void COTPWriterProDlg::OnBnClickedButtonEncrypt()
@@ -753,7 +882,9 @@ void COTPWriterProDlg::OnBnClickedButtonErase()
 
     if (bRes)
     {
-        EditCtrlOutput(0, _T("成功擦除块：%d - %d\r\n"), startSectorNum, endSectorNum);
+        EditCtrlOutput(0, _T("擦除块：%d - %d\r\n"), startSectorNum, endSectorNum);
+        PrintCurrentTime();
+        EditCtrlOutput(0, _T("擦除 ... 请等待：容量 X 6.25秒/MByte\r\n"));
     }
     else
     {
@@ -926,15 +1057,15 @@ void COTPWriterProDlg::UpdateBufferDisplay( unsigned int addr, unsigned int leng
 
 void COTPWriterProDlg::OnBnClickedButtonOption()
 {
-    if (m_Option.DoModal() == IDCANCEL)
+    if (m_Option.DoModal() == IDOK)
     {
-        return;
+        if (m_Option.m_bEnableConsoleOutput)
+            hgzOpenConsole();
+        else
+            hgzCloseConsole();
     }
-
-    if (m_Option.m_bEnableConsoleOutput)
-        hgzOpenConsole();
-    else
-        hgzCloseConsole();
+    
+    OnBnClickedCheckEnableRollnumWrite();
 }
 
 
@@ -986,6 +1117,8 @@ void COTPWriterProDlg::OnCbnSelchangeComboSelectChipType()
         m_ChipType = HS__CMD__CHIP_TYPE__OTP__HS6206;
     else if (s.Compare(_T("EN25T80")) == 0)
         m_ChipType = HS__CMD__CHIP_TYPE__FLASH__EN25T80;
+    else if (s.Compare(_T("FPGA_HS6206")) == 0)
+        m_ChipType = HS__CMD__CHIP_TYPE__OTP__HS6206;
     else
         m_ChipType = HS__CMD__CHIP_TYPE__NONE;
 
@@ -1085,10 +1218,232 @@ void COTPWriterProDlg::Cmd1Data0( CHgzMem::pMemFunc_Cmd1Data0 CmdFunc, CString s
 
     CString str = s;
     UINT32 res = 0;
-    if ((g_mem.*CmdFunc)(res) && res)
+    m_bOK = ((g_mem.*CmdFunc)(res) && res);
+    if (m_bOK)
             str += _T("成功！\r\n");
     else
         str += _T("失败！\r\n");
 
     EditCtrlOutput(0, str.GetString());
+}
+
+
+void COTPWriterProDlg::OnBnClickedCheckEnableRollnumWrite()
+{
+    AfxGetApp()->WriteProfileInt(_T("Settings"), _T("EnableRollnum"), m_ctrlEnableRollnumWrite.GetCheck());
+
+    if (!m_ctrlEnableRollnumWrite.GetCheck())
+        return;
+
+    // 1. Parse config file.
+    m_Option.m_RollnumAndCPConfigDialog.ConfigFile_Parser();
+
+    if (!m_Option.m_RollnumAndCPConfigDialog.m_ConfigFileCheck.CP_Config_File1 && !m_Option.m_RollnumAndCPConfigDialog.m_ConfigFileCheck.CP_Config_File2)
+    {
+        PrintCurrentTime();
+        EditCtrlOutput(0, _T("滚码与CP测试配置文件路径错误，请重新配置。\r\n"));
+    }
+
+    // 2. Fill rollnumRFSynccode struct
+    m_Option.m_RollnumAndCPConfigDialog.SD_FillRollnumRFSynccode();
+    
+    // 3. Fill rollnum region
+    FillRollnumRegionForWrite();
+
+}
+
+void COTPWriterProDlg::WriteRollnum(void)
+{
+    u32 startAddr = 0, numBytesToWrite = 0, numBytesWritten = 0;
+    startAddr = m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.OTPAddrForRollnum;
+    numBytesToWrite = sizeof(m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable);
+    
+    CHgzMem mem;
+    mem.WriteBuf(startAddr, (UINT8 *)&m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.rollnum, numBytesToWrite);
+    
+    PrintCurrentTime();
+    EditCtrlOutput(0, _T("滚码烧录：\r\n"));
+    PrintCurrentTime();
+    EditCtrlOutput(0, _T("需要写入字节数：%d\r\n"), numBytesToWrite);
+    numBytesWritten = mem.Write(startAddr, numBytesToWrite);
+    PrintCurrentTime();
+    m_bOK = numBytesWritten == numBytesToWrite;
+    EditCtrlOutput(0, _T("实际写入字节数：%d，%s\r\n"), numBytesWritten, m_bOK ? _T("成功！") : _T("失败！"));
+}
+
+
+afx_msg void COTPWriterProDlg::OnBnClickedButtonAuto()
+{
+    EditCtrlOutput(0, _T("\r\n"));
+    PrintCurrentTime();
+    
+    m_bOK = true;
+    CString s;
+    m_ctrlChipSel.GetLBText(m_ctrlChipSel.GetCurSel(), s);
+    
+    if (s.Compare(_T("FPGA_HS6206")) != 0)
+    {
+        EditCtrlOutput(0, _T("自动 ＝ 查空测试 + 字位线测试 + 预编程测试 + 烧写 + 校验\r\n"));
+
+        if (!m_bOK)
+            goto LocalExit;
+        OnBnClickedButtonTestBlankCheck();
+    
+        if (!m_bOK)
+            goto LocalExit;
+        OnBnClickedButtonTestDec();
+    
+        if (!m_bOK)
+            goto LocalExit;
+        OnBnClickedButtonTestWR();
+    }
+    else
+        EditCtrlOutput(0, _T("自动 ＝ 烧写 + 校验\r\n"));
+
+
+    if (!m_bOK)
+        goto LocalExit;
+    OnBnClickedButtonWrite();
+    
+    if (!m_bOK)
+        goto LocalExit;
+    OnBnClickedButtonVerify();
+    if (!m_bOK && m_ctrlEnableRollnumWrite.GetCheck()) 
+    {
+        // if rollnum enabled, cancel rollnum increasing.
+        PrintCurrentTime();
+        EditCtrlOutput(0, _T("滚码自增取消。\r\n"));
+
+        m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.rollnum--;
+        IsRollnumValid();
+
+        // write new rollnum to config file
+        m_Option.m_RollnumAndCPConfigDialog.WriteRollnumToConfigFile();
+
+        // fill buffer's rollnum region with new rollnum and RF synccodes
+        OnBnClickedCheckEnableRollnumWrite();
+
+    }
+
+LocalExit:
+    EditCtrlOutput(0, _T("\r\n"));
+
+}
+
+void COTPWriterProDlg::FillRollnumRegionForWrite(void)
+{
+    CString s;
+    s.Format(_T("%08X"), m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.rollnum);
+    GetDlgItem(IDC_EDIT3)->SetWindowText(s);
+    s.Format(_T("%08X"), m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.synccode4b);
+    GetDlgItem(IDC_EDIT10)->SetWindowText(s);
+    s.Format(_T("%06X"), m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.synccode3b);
+    GetDlgItem(IDC_EDIT11)->SetWindowText(s);
+    s.Format(_T("%010X"), m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.reserved);
+    GetDlgItem(IDC_EDIT12)->SetWindowText(s);
+
+    if (!m_Option.m_RollnumAndCPConfigDialog.IsRollnumValid() || !m_Option.m_RollnumAndCPConfigDialog.IsRFSyncodeValid())
+    {
+        m_ctrlEnableRollnumWrite.SetCheck(false);
+    }
+}
+
+
+
+void COTPWriterProDlg::OnDeltaposSpin1(NMHDR *pNMHDR, LRESULT *pResult)
+{
+    LPNMUPDOWN pNMUpDown = reinterpret_cast<LPNMUPDOWN>(pNMHDR);
+    // TODO: 在此添加控件通知处理程序代码
+    AdjustRollnumForWrite(pNMUpDown->iDelta);
+
+    *pResult = 0;
+}
+
+bool COTPWriterProDlg::IsRollnumValid()
+{
+    if (!m_Option.m_RollnumAndCPConfigDialog.IsRollnumValid())
+    {
+        PrintCurrentTime();
+        CString s;
+        s.Format(_T("警告！ 滚码超限 [%08X, %08X]： %08X"), m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rollnumMin, m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rollnumMax, m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.rollnum);
+        EditCtrlOutput(0, s+_T("\r\n"));
+        AfxMessageBox(s);
+        return false;
+    }
+    return true;
+}
+
+
+void COTPWriterProDlg::OnOK()
+{
+    // TODO: 在此添加专用代码和/或调用基类
+    if (GetDlgItem(IDOK) == GetFocus())
+    {
+        CDialogEx::OnOK();
+    }
+
+    if (GetDlgItem(IDC_EDIT3) == GetFocus())
+    {
+        AdjustRollnumForWrite(0);
+    }
+
+
+    //CDialogEx::OnOK();
+}
+
+
+void COTPWriterProDlg::OnCancel()
+{
+    // TODO: 在此添加专用代码和/或调用基类
+
+    CDialogEx::OnCancel();
+}
+
+void COTPWriterProDlg::AdjustRollnumForWrite( INT32 iDelta )
+{
+    CHgzString s;
+    GetDlgItem(IDC_EDIT3)->GetWindowText(s);
+    m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.rollnum = s.stoul(0, 16);
+    m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.rollnum += iDelta;
+
+    if (IsRollnumValid() && m_ctrlEnableRollnumWrite.GetCheck())
+        m_Option.m_RollnumAndCPConfigDialog.WriteRollnumToConfigFile();
+
+    m_Option.m_RollnumAndCPConfigDialog.SD_FillRollnumRFSynccode();
+    FillRollnumRegionForWrite();
+}
+
+
+void COTPWriterProDlg::OnBnClickedButtonBufferDataProfile()
+{
+    u32 numOfOne = 0;
+    u32 numTotal = g_mem.SizeUsed() * 8;
+
+    UINT8 *pbuf = g_mem.GetBuf();
+
+    for (u32 i = 0; i < g_mem.SizeUsed(); i++)
+        numOfOne += count_ones(pbuf[i], 8);
+
+    PrintCurrentTime();
+    EditCtrlOutput(0, _T("数据概况： num_of_ones = %d, ratio = %.2f%%\r\n"), numOfOne, (FLOAT)numOfOne*100/numTotal);
+}
+
+
+void COTPWriterProDlg::OnBnClickedButtonBufferSearch()
+{
+    CHgzString s;
+    m_ctrlBufferSearch.GetWindowText(s);
+    UINT8 x[1024];
+    u32 numByte = m_ctrlBufferSearch.GetWindowHexArray(x);
+
+    // start searching buffer
+    UINT8 y = 0;
+
+    for (u32 i = 0; i < g_mem.SizeUsed(); i++)
+    {
+        g_mem.ReadBuf(i, &y, 1);
+        if (y == x[0])
+            ; // temporary not to implement
+    }
+    
 }

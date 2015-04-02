@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OTPWriterPro", "OTPWriterPro\OTPWriterPro.vcxproj", "{AFD42796-BEB8-4DAB-823E-4E37C5E9A81B}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Usb", "..\..\..\..\work\HS6200\胡商州\hszUSBWriter\Usb.vcxproj", "{1EFC2F35-0367-480B-83D4-C84BCDD8C918}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HS6200Test", "..\HS6200Test\HS6200Test\HS6200Test.vcxproj", "{20534A41-3FEE-49D9-8606-2F7292BBDBD3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,10 +15,10 @@ Global
 		{AFD42796-BEB8-4DAB-823E-4E37C5E9A81B}.Debug|Win32.Build.0 = Debug|Win32
 		{AFD42796-BEB8-4DAB-823E-4E37C5E9A81B}.Release|Win32.ActiveCfg = Release|Win32
 		{AFD42796-BEB8-4DAB-823E-4E37C5E9A81B}.Release|Win32.Build.0 = Release|Win32
-		{1EFC2F35-0367-480B-83D4-C84BCDD8C918}.Debug|Win32.ActiveCfg = Debug|Win32
-		{1EFC2F35-0367-480B-83D4-C84BCDD8C918}.Debug|Win32.Build.0 = Debug|Win32
-		{1EFC2F35-0367-480B-83D4-C84BCDD8C918}.Release|Win32.ActiveCfg = Release|Win32
-		{1EFC2F35-0367-480B-83D4-C84BCDD8C918}.Release|Win32.Build.0 = Release|Win32
+		{20534A41-3FEE-49D9-8606-2F7292BBDBD3}.Debug|Win32.ActiveCfg = Debug|Win32
+		{20534A41-3FEE-49D9-8606-2F7292BBDBD3}.Debug|Win32.Build.0 = Debug|Win32
+		{20534A41-3FEE-49D9-8606-2F7292BBDBD3}.Release|Win32.ActiveCfg = Release|Win32
+		{20534A41-3FEE-49D9-8606-2F7292BBDBD3}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

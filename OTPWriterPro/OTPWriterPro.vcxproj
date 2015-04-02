@@ -123,6 +123,7 @@
     <ClInclude Include="OTPWriterProDlg.h" />
     <ClInclude Include="Packet.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="RollnumAndCPConfigDialog.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
@@ -143,6 +144,7 @@
     <ClCompile Include="OTPWriterPro.cpp" />
     <ClCompile Include="OTPWriterProDlg.cpp" />
     <ClCompile Include="Packet.cpp" />
+    <ClCompile Include="RollnumAndCPConfigDialog.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

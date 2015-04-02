@@ -35,7 +35,19 @@ void COption::DoDataExchange(CDataExchange* pDX)
 
 
 BEGIN_MESSAGE_MAP(COption, CDialogEx)
+    ON_BN_CLICKED(IDC_BUTTON1, &COption::OnBnClickedButton1)
 END_MESSAGE_MAP()
 
 
 // COption 消息处理程序
+
+
+void COption::OnBnClickedButton1()
+{
+    if (m_RollnumAndCPConfigDialog.DoModal() == IDCANCEL)
+    {
+        return;
+    }
+
+    
+}

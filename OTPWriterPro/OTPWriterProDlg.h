@@ -30,6 +30,7 @@ extern "C" {
 #include "d:\users\hgz\documents\appdata\visual studio 2010\projects\otpwriterpro\otpwriterpro\hgz\hgzcombobox.h"
 #include "d:\users\hgz\documents\appdata\visual studio 2010\projects\otpwriterpro\otpwriterpro\hgz\hgzcombobox.h"
 #include "d:\users\hgz\documents\appdata\visual studio 2010\projects\otpwriterpro\otpwriterpro\hgz\hgzcombobox.h"
+#include "d:\users\hgz\documents\appdata\visual studio 2010\projects\otpwriterpro\otpwriterpro\hgz\hgzcombobox.h"
 
 
 
@@ -101,7 +102,10 @@ public:
     afx_msg void OnBnClickedButtonSaveAs();
     afx_msg void OnBnClickedButtonRead();
 	afx_msg void OnBnClickedButtonWrite();
-	afx_msg void OnBnClickedButtonErase();
+
+    bool IsRollnumValid();
+
+    afx_msg void OnBnClickedButtonErase();
 	afx_msg void OnBnClickedButtonVerify();
 	afx_msg void OnBnClickedButtonEncrypt();
     afx_msg LRESULT OnLvmItemChanged(WPARAM wParam, LPARAM lParam);
@@ -149,6 +153,22 @@ public:
     CButton m_ctrlIgnoreMem;
     CButton m_ctrlWrite;
     CButton m_ctrlEncrypt;
+    CButton m_ctrlEnableRollnumWrite;
+    afx_msg void OnBnClickedCheckEnableRollnumWrite();
+    CButton m_ctrlAuto;
+    bool m_bOK;
+    afx_msg void OnBnClickedButtonAuto();
+    void FillRollnumRegionForWrite(void);
+    afx_msg void OnDeltaposSpin1(NMHDR *pNMHDR, LRESULT *pResult);
+
+    void AdjustRollnumForWrite( INT32 iDelta );
+
+    void WriteRollnum(void);
+    virtual void OnOK();
+    virtual void OnCancel();
+    afx_msg void OnBnClickedButtonBufferDataProfile();
+    afx_msg void OnBnClickedButtonBufferSearch();
+    CHgzComboBox m_ctrlBufferSearch;
 };
 
 

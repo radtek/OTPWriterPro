@@ -1,5 +1,6 @@
 #pragma once
 
+#include "RollnumAndCPConfigDialog.h"
 
 // COption ¶Ô»°¿ò
 
@@ -22,4 +23,7 @@ public:
     BOOL m_bWriteBufSizeReallyUsed;
     BOOL m_bEnableConsoleOutput;
     int m_nPacketDataLength;
+    afx_msg void OnBnClickedButton1();
+
+    CRollnumAndCPConfigDialog m_RollnumAndCPConfigDialog;
 };

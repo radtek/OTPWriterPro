@@ -93,6 +93,9 @@
     <ClInclude Include="hgz\HgzString.h">
       <Filter>hgz</Filter>
     </ClInclude>
+    <ClInclude Include="RollnumAndCPConfigDialog.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="OTPWriterPro.cpp">
@@ -136,6 +139,9 @@
     </ClCompile>
     <ClCompile Include="hgz\HgzString.cpp">
       <Filter>hgz</Filter>
+    </ClCompile>
+    <ClCompile Include="RollnumAndCPConfigDialog.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
