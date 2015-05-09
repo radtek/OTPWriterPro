@@ -96,6 +96,18 @@
     <ClInclude Include="RollnumAndCPConfigDialog.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="HgzMD5.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgTools.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgMD5.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="HgzMFCEditBrowseCtrl.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="OTPWriterPro.cpp">
@@ -141,6 +153,18 @@
       <Filter>hgz</Filter>
     </ClCompile>
     <ClCompile Include="RollnumAndCPConfigDialog.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="HgzMD5.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgTools.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgMD5.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="HgzMFCEditBrowseCtrl.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

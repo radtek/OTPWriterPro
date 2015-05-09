@@ -26,4 +26,5 @@ public:
     afx_msg void OnBnClickedButton1();
 
     CRollnumAndCPConfigDialog m_RollnumAndCPConfigDialog;
+    afx_msg void OnBnClickedCheckEnableIncontinuousAddress();
 };

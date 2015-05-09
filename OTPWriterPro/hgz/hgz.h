@@ -76,7 +76,14 @@ extern BOOL hgzCloseConsole();
 
 // BigEnding <-> LittleEnding
 extern void hgzRevertByteOrder(UINT8 *addr, UINT length);
+extern void hgzRevertByteOrder( UINT8 *out, const UINT8 *in, UINT bytes );
 extern unsigned __int32 hgzRevertByteOrder32( unsigned __int32 x );
 extern unsigned __int16 hgzRevertByteOrder16( unsigned __int16 x );extern UINT64 hgzMaskBits( UINT64 val, int validBits );
 
 extern CString GetProductVersion(LPCTSTR lpszFileName);
+
+extern bool hgzIsBigEndian(void);
+
+extern CString hgzGetFolderPath(const CString &filePath);
+extern CString hgzGetFileName(const CString &filePath);
+extern CString hgzGetFileTitle(const CString &filePath);

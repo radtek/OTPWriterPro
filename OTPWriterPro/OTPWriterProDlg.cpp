@@ -12,7 +12,8 @@
 #include ".\hgz\hgz.h"
 #include <string>
 #include "hgz/HgzString.h"
-
+#include "HgzMD5.h"
+#include "DlgTools.h"
 
 
 #ifdef _DEBUG
@@ -129,6 +130,7 @@ BEGIN_MESSAGE_MAP(COTPWriterProDlg, CDialogEx)
     ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN1, &COTPWriterProDlg::OnDeltaposSpin1)
     ON_BN_CLICKED(IDC_BUTTON2, &COTPWriterProDlg::OnBnClickedButtonBufferDataProfile)
     ON_BN_CLICKED(IDC_BUTTON22, &COTPWriterProDlg::OnBnClickedButtonBufferSearch)
+    ON_BN_CLICKED(IDC_BUTTON23, &COTPWriterProDlg::OnBnClickedButton23)
 END_MESSAGE_MAP()
 
 
@@ -199,7 +201,7 @@ BOOL COTPWriterProDlg::OnInitDialog()
 
     // Option
     m_Option.m_bEnableConsoleOutput = FALSE;
-    m_Option.m_bWriteBufSizeReallyUsed = TRUE;
+    m_Option.m_bWriteBufSizeReallyUsed = FALSE;
     m_Option.m_nPacketDataLength = 52;
     if (m_Option.m_bEnableConsoleOutput)	
         hgzOpenConsole();
@@ -565,7 +567,11 @@ void COTPWriterProDlg::OnBnClickedButtonOpenFile()
 
         while ((curpos = (unsigned int)mFile.GetPosition()) != fileLen) 
         {
-            HexRecReadFromFile(g_mem.GetBuf(), g_mem.GetBufFlag(), mFile, hr, addr);
+            if (!HexRecReadFromFile(g_mem.GetBuf(), g_mem.GetBufFlag(), mFile, hr, addr))
+            {
+                EditCtrlOutput(0, _T("  Error!\r\n"));
+                return;
+            }
             max_addr = max(max_addr, addr);
 
             int percent = 100 * curpos / fileLen;
@@ -598,10 +604,20 @@ void COTPWriterProDlg::OnBnClickedButtonOpenFile()
     EditCtrlOutput(-4, _T("100%\r\n"));
     mFile.Close();
 
+    mFile.Open(pathName, CFile::modeRead | CFile::shareDenyNone | CFile::typeBinary);
+    CHgzMD5 md5;
+    CString s = md5.md5(mFile);
+    PrintCurrentTime();
+    EditCtrlOutput(0, _T("md5(%s) = %s\r\n"), mFile.GetFileName(), s);
+    s = md5.md5(g_mem.GetBuf(), g_mem.SizeUsed());
+    PrintCurrentTime();
+    EditCtrlOutput(0, _T("md5(buffer) = %s\r\n"), s);
+    mFile.Close();
+
     //UpdateBufferShow();
     UpdateBufferDisplay(0, max(nOldSize, g_mem.SizeUsed()));
     m_ctrlMemAddrBegin.SetWindowText(_T("0000"));
-    m_ctrlDataLength.SetWindowsTextFormat(_T("%d"), g_mem.SizeUsed());
+    m_ctrlDataLength.SetWindowsTextFormat(m_chkDataLen.GetCheck() ? _T("%X") : _T("%d"), g_mem.SizeUsed());
 
     // if rollnum enabled, update rollnum region in buffer and display
     OnBnClickedCheckEnableRollnumWrite();
@@ -813,6 +829,9 @@ void COTPWriterProDlg::OnBnClickedButtonWrite()
             }
         }
     }
+
+    if (m_Option.m_bWriteBufSizeReallyUsed)
+        m_ctrlDataLength.SetWindowsTextFormat(m_chkDataLen.GetCheck() ? _T("%X") : _T("%d"), g_mem.SizeUsed());
 }
 
 
@@ -825,6 +844,16 @@ void COTPWriterProDlg::OnBnClickedButtonRead()
     EditCtrlOutput(0, _T("读取 ... "));
     EditCtrlOutput(-7, _T("实际读取字节数：%d\r\n"), g_mem.Read(addr, len));
     UpdateBufferDisplay(addr, len);
+
+    CString s;
+    CHgzMD5 md5;
+    s = md5.md5(g_mem.GetBuf(), g_mem.SizeUsed());
+    PrintCurrentTime();
+    EditCtrlOutput(0, _T("md5(buffer) = %s\r\n"), s);
+
+    if (m_Option.m_bWriteBufSizeReallyUsed)
+        m_ctrlDataLength.SetWindowsTextFormat(m_chkDataLen.GetCheck() ? _T("%X") : _T("%d"), g_mem.SizeUsed());
+
 }
 
 
@@ -934,6 +963,10 @@ afx_msg LRESULT COTPWriterProDlg::OnLvmItemChanged(WPARAM wParam, LPARAM lParam)
         }
     }
     TRACE(_T("SizeUsed = %d, CurCell = %d\n"), g_mem.SizeUsed(), addr);
+
+    if (m_Option.m_bWriteBufSizeReallyUsed)
+        m_ctrlDataLength.SetWindowsTextFormat(m_chkDataLen.GetCheck() ? _T("%X") : _T("%d"), g_mem.SizeUsed());
+
     return 0;
 }
 
@@ -1038,6 +1071,10 @@ void COTPWriterProDlg::OnBnClickedButtonFillInBuffer()
 
     g_mem.FillBuf(addr, data, dataLen);
     UpdateBufferDisplay(addr, dataLen);
+
+    if (m_Option.m_bWriteBufSizeReallyUsed)
+        m_ctrlDataLength.SetWindowsTextFormat(m_chkDataLen.GetCheck() ? _T("%X") : _T("%d"), g_mem.SizeUsed());
+
 }
 
 
@@ -1063,6 +1100,20 @@ void COTPWriterProDlg::OnBnClickedButtonOption()
             hgzOpenConsole();
         else
             hgzCloseConsole();
+
+        if (m_Option.m_bWriteBufSizeReallyUsed)
+        {
+            m_ctrlMemAddrBegin.EnableWindow(FALSE);
+            m_ctrlDataLength.EnableWindow(FALSE);
+
+            m_ctrlMemAddrBegin.SetWindowsTextFormat(_T("%04X"), 0);
+            m_ctrlDataLength.SetWindowsTextFormat(m_chkDataLen.GetCheck() ? _T("%X") : _T("%d"), g_mem.SizeUsed());
+        }
+        else
+        {
+            m_ctrlMemAddrBegin.EnableWindow(TRUE);
+            m_ctrlDataLength.EnableWindow(TRUE);
+        }
     }
     
     OnBnClickedCheckEnableRollnumWrite();
@@ -1088,6 +1139,10 @@ void COTPWriterProDlg::OnBnClickedButtonClearBuffer()
 
     g_mem.ClearBuf(addr, dataLen);
     UpdateBufferDisplay(addr, dataLen);
+
+    if (m_Option.m_bWriteBufSizeReallyUsed)
+        m_ctrlDataLength.SetWindowsTextFormat(m_chkDataLen.GetCheck() ? _T("%X") : _T("%d"), g_mem.SizeUsed());
+
 }
 
 UINT8 COTPWriterProDlg::GetDataToFillBuffer()
@@ -1281,7 +1336,7 @@ afx_msg void COTPWriterProDlg::OnBnClickedButtonAuto()
     CString s;
     m_ctrlChipSel.GetLBText(m_ctrlChipSel.GetCurSel(), s);
     
-    if (s.Compare(_T("FPGA_HS6206")) != 0)
+    if (s.Compare(_T("HS6206")) == 0)
     {
         EditCtrlOutput(0, _T("自动 ＝ 查空测试 + 字位线测试 + 预编程测试 + 烧写 + 校验\r\n"));
 
@@ -1297,14 +1352,28 @@ afx_msg void COTPWriterProDlg::OnBnClickedButtonAuto()
             goto LocalExit;
         OnBnClickedButtonTestWR();
     }
+    else if (s.Compare(_T("FPGA_HS6206")) == 0)
+    {
+        EditCtrlOutput(0, _T("自动 ＝ 查空测试 + 烧写 + 校验\r\n"));
+        
+        if (!m_bOK)
+            goto LocalExit;
+        OnBnClickedButtonTestBlankCheck();
+    }
     else
+    {
         EditCtrlOutput(0, _T("自动 ＝ 烧写 + 校验\r\n"));
 
+        if (!m_bOK)
+            goto LocalExit;
+    }
 
     if (!m_bOK)
         goto LocalExit;
     OnBnClickedButtonWrite();
     
+    Sleep(200);
+
     if (!m_bOK)
         goto LocalExit;
     OnBnClickedButtonVerify();
@@ -1312,7 +1381,7 @@ afx_msg void COTPWriterProDlg::OnBnClickedButtonAuto()
     {
         // if rollnum enabled, cancel rollnum increasing.
         PrintCurrentTime();
-        EditCtrlOutput(0, _T("滚码自增取消。\r\n"));
+        EditCtrlOutput(0, _T("滚码自增回撤。\r\n"));
 
         m_Option.m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.rollnum--;
         IsRollnumValid();
@@ -1426,6 +1495,18 @@ void COTPWriterProDlg::OnBnClickedButtonBufferDataProfile()
 
     PrintCurrentTime();
     EditCtrlOutput(0, _T("数据概况： num_of_ones = %d, ratio = %.2f%%\r\n"), numOfOne, (FLOAT)numOfOne*100/numTotal);
+
+    //////////////////////////////////////////////////////
+    // for MD5 test
+    CHgzMD5 md5;
+    md5.md5(g_mem.GetBuf(), g_mem.SizeUsed());
+    /*CString sDigest;
+    CString s(_T("jklmn"));*/
+    //md5.md5(_T("jklmn"));
+    //md5.md5("jklmn");
+    //md5.md5("a");
+
+
 }
 
 
@@ -1446,4 +1527,11 @@ void COTPWriterProDlg::OnBnClickedButtonBufferSearch()
             ; // temporary not to implement
     }
     
+}
+
+
+void COTPWriterProDlg::OnBnClickedButton23()
+{
+    CDlgTools dlg;
+    dlg.DoModal();
 }

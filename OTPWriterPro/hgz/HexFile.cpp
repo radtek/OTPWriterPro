@@ -57,7 +57,7 @@ void HexRecPrint( HEXRECORD_t &hr )
 }
 
 
-void HexRecReadFromFile( unsigned char *buf, unsigned char *buf_flag, CStdioFile &mFile, HEXRECORD_t &hr, unsigned int &cur_addr )
+bool HexRecReadFromFile( unsigned char *buf, unsigned char *buf_flag, CStdioFile &mFile, HEXRECORD_t &hr, unsigned int &cur_addr )
 {
     CString s;
     mFile.ReadString(s);
@@ -65,6 +65,18 @@ void HexRecReadFromFile( unsigned char *buf, unsigned char *buf_flag, CStdioFile
         ((unsigned char *)&hr)[1+i/2] = (unsigned char)stoul((tstring)(s.Mid(i, 2).GetString()), 0, 16);
     }
     //HexRecPrint(hr);
+    // check checksum
+    UINT8 checksum = hr.data[hr.reclen];
+    if (checksum != hr.checksum())
+    {
+        hr.data[hr.reclen] = checksum;
+        CString str;
+        str.Format(_T("CheckSum error: %s"), s);
+        //printf(str);
+        HexRecPrint(hr);
+        AfxMessageBox(str);
+        return false;
+    }
 
     unsigned int addr;
     unsigned int base_addr = cur_addr & 0xffff0000;
@@ -91,6 +103,7 @@ void HexRecReadFromFile( unsigned char *buf, unsigned char *buf_flag, CStdioFile
         break;
     case HEX_REC_SSA: // Start Segment Address Record
         AfxMessageBox(_T("Hex item type: 0x03 (Start Segment Address Record), unprocessed."));
+        return false;
         break;
     case HEX_REC_ELA: // Extended Linear Address Record
         base_addr = (hr.data[0]<<24) + (hr.data[1]<<16);
@@ -100,11 +113,13 @@ void HexRecReadFromFile( unsigned char *buf, unsigned char *buf_flag, CStdioFile
         break;
     case HEX_REC_SLA: // Start Linear Address Record
         AfxMessageBox(_T("Hex item type: 0x05 (Start Linear Address Record), unprocessed."));
+        return false;
         break;
     default:
         break;
     }
 
+    return true;
 }
 
 void HexRecSaveToFile(HEXRECORD_t &hr, CStdioFile &mFile )

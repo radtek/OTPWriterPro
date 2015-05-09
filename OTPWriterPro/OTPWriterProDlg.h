@@ -169,6 +169,7 @@ public:
     afx_msg void OnBnClickedButtonBufferDataProfile();
     afx_msg void OnBnClickedButtonBufferSearch();
     CHgzComboBox m_ctrlBufferSearch;
+    afx_msg void OnBnClickedButton23();
 };
 
 

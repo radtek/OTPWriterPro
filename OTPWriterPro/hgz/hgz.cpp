@@ -397,6 +397,17 @@ void hgzRevertByteOrder( UINT8 *addr, UINT bytes )
 	}
 }
 
+void hgzRevertByteOrder( UINT8 *out, const UINT8 *in, UINT bytes )
+{
+    unsigned char x;
+
+    if (bytes < 2) return;
+    
+    for (int i = 0; i < bytes; i++) 
+        out[bytes-1-i] = in[i];
+   
+}
+
 unsigned __int32 hgzRevertByteOrder32( unsigned __int32 x )
 {
 	hgzRevertByteOrder((unsigned char *)&x, 4);
@@ -469,4 +480,44 @@ CString GetProductVersion(LPCTSTR lpszFileName)
     }   
     
     return strVersion;   
+}
+
+inline
+extern bool hgzIsBigEndian( void )
+{
+    UINT32 x = 0x01020304;
+    return (*(UINT8 *)&x == 0x01);
+}
+
+CString hgzGetFolderPath(const CString &filePath)
+{
+    int n = filePath.ReverseFind(_T('\\'));
+    if (n == -1)
+        return _T("");
+        
+    return filePath.Left(n);
+}
+
+CString hgzGetFileName(const CString &filePath)
+{
+    int n = filePath.ReverseFind(_T('\\'));
+    if (n == -1)
+        return filePath;
+
+    return filePath.Right(filePath.GetLength()-1-n);
+}
+
+CString hgzGetFileTitle(const CString &filePath)
+{
+    CString fn = hgzGetFileName(filePath);
+    if (fn.IsEmpty())
+        return fn;
+    else
+    {
+        int n = fn.ReverseFind(_T('.'));
+        if (n == -1)
+            return fn;
+
+        return fn.Left(n);
+    }
 }

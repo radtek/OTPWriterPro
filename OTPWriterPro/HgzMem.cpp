@@ -373,6 +373,7 @@ BOOL CHgzMem::VerifyEx( UINT32 addr, UINT32 length, UINT32 addrIgnoreBegin, UINT
         }
 
         g_pctrlProgress->SetPos(num*100/length);
+        g_pctrlProgress->UpdateWindow();
 
         Sleep(20);
     }

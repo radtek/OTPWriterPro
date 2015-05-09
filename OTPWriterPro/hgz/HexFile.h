@@ -44,7 +44,7 @@ typedef struct {
 
 void HexRec(HEXRECORD_t & hr, HEXRECTYPE_t rectype, unsigned char reclen, unsigned int addr, unsigned char *buf);
 void HexRecPrint( HEXRECORD_t &hr );
-void HexRecReadFromFile( unsigned char *buf, unsigned char *buf_flag, CStdioFile &mFile, HEXRECORD_t &hr, unsigned int &cur_addr );
+bool HexRecReadFromFile( unsigned char *buf, unsigned char *buf_flag, CStdioFile &mFile, HEXRECORD_t &hr, unsigned int &cur_addr );
 void HexRecSaveToFile( HEXRECORD_t &hr, CStdioFile &mFile );
 
 
