@@ -2,6 +2,7 @@
 #include "afxwin.h"
 #include "afxshelltreectrl.h"
 #include "afxeditbrowsectrl.h"
+#include "HgzEditBrowseCtrl.h"
 
 
 // CDlgMD5 ¶Ô»°¿ò
@@ -23,9 +24,9 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
     afx_msg void OnBnClickedButton3();
-    CMFCEditBrowseCtrl m_ctrlFileToBeMD5ed;
+    CHgzEditBrowseCtrl m_ctrlFileToBeMD5ed;
     CEdit m_ctrlFileMD5;
-    CMFCEditBrowseCtrl m_ctrlMD5File;
+    CHgzEditBrowseCtrl m_ctrlMD5File;
     CEdit m_ctrlStringToBeMD5ed;
     CEdit m_ctrlStringMD5;
     afx_msg void OnBnClickedButton5();
@@ -37,7 +38,8 @@ public:
     afx_msg void OnBnClickedButtonGenerateMD5File();
     afx_msg void OnBnClickedButtonOpenMD5File();
     CStatic m_ctrlMD5Progress;
-    CMFCShellTreeCtrl m_ctrlShellTree;
     afx_msg void OnEnChangeMfceditbrowse1();
     virtual void OnOK();
+protected:
+    afx_msg LRESULT OnHgzeditbrowsectrlAfterupdate(WPARAM wParam, LPARAM lParam);
 };

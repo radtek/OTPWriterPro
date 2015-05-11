@@ -32,7 +32,6 @@ void CDlgMD5::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_EDIT7, m_ctrlStringMD5);
     DDX_Control(pDX, IDC_COMBO1, m_ctrlStringCoding);
     DDX_Control(pDX, IDC_MD5_COMPUTE_PROGRESS, m_ctrlMD5Progress);
-    DDX_Control(pDX, IDC_MFCSHELLTREE1, m_ctrlShellTree);
 }
 
 
@@ -42,11 +41,11 @@ BEGIN_MESSAGE_MAP(CDlgMD5, CDialogEx)
     ON_BN_CLICKED(IDC_BUTTON6, &CDlgMD5::OnBnClickedButtonVerifyMD5File)
     ON_BN_CLICKED(IDC_BUTTON7, &CDlgMD5::OnBnClickedButtonGenerateMD5File)
     ON_BN_CLICKED(IDC_BUTTON8, &CDlgMD5::OnBnClickedButtonOpenMD5File)
+    ON_MESSAGE(WM_HgzEditBrowseCtrl_AFTERUPDATE, &CDlgMD5::OnHgzeditbrowsectrlAfterupdate)
 END_MESSAGE_MAP()
 
 
 // CDlgMD5 消息处理程序
-
 
 void CDlgMD5::OnBnClickedButton5()
 {
@@ -113,6 +112,8 @@ BOOL CDlgMD5::OnInitDialog()
     m_ctrlStringCoding.SelectString(0, _T("ANSI"));
     m_ctrlMD5Progress.SetWindowText(_T(""));
     m_ctrlFileToBeMD5ed.EnableFileBrowseButton();
+    m_ctrlFileToBeMD5ed.SetFilter(_T("All Files|*.*|Hex or Bin Files|*.hex;*.bin|"));//(_T("Hex Files (*.hex), Bin Files (*.bin)|*.hex;*.bin|All Files (*.*)|*.*||"));
+    m_ctrlMD5File.SetFilter(_T("MD5 Files (*.md5)|*.md5|All Files (*.*)|*.*||"));
 
     return TRUE;  // return TRUE unless you set the focus to a control
     // 异常: OCX 属性页应返回 FALSE
@@ -228,4 +229,17 @@ void CDlgMD5::OnOK()
     {
         OnEnChangeMfceditbrowse1();
     }
+}
+
+
+afx_msg LRESULT CDlgMD5::OnHgzeditbrowsectrlAfterupdate(WPARAM wParam, LPARAM lParam)
+{
+    HWND hwnd = (HWND)lParam;
+
+    if (m_ctrlFileToBeMD5ed.GetSafeHwnd() == hwnd)
+    {
+        OnEnChangeMfceditbrowse1();
+    }
+
+    return 0;
 }

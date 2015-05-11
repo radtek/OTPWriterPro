@@ -105,7 +105,7 @@
     <ClInclude Include="DlgMD5.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="HgzMFCEditBrowseCtrl.h">
+    <ClInclude Include="HgzEditBrowseCtrl.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -164,7 +164,7 @@
     <ClCompile Include="DlgMD5.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="HgzMFCEditBrowseCtrl.cpp">
+    <ClCompile Include="HgzEditBrowseCtrl.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

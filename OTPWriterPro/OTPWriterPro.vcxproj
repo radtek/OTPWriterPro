@@ -112,7 +112,7 @@
     <ClInclude Include="DlgTools.h" />
     <ClInclude Include="HgzMD5.h" />
     <ClInclude Include="HgzMem.h" />
-    <ClInclude Include="HgzMFCEditBrowseCtrl.h" />
+    <ClInclude Include="HgzEditBrowseCtrl.h" />
     <ClInclude Include="hgz\HexFile.h" />
     <ClInclude Include="hgz\hgz.h" />
     <ClInclude Include="hgz\HgzComboBox.h" />
@@ -136,7 +136,7 @@
     <ClCompile Include="DlgTools.cpp" />
     <ClCompile Include="HgzMD5.cpp" />
     <ClCompile Include="HgzMem.cpp" />
-    <ClCompile Include="HgzMFCEditBrowseCtrl.cpp" />
+    <ClCompile Include="HgzEditBrowseCtrl.cpp" />
     <ClCompile Include="hgz\HexFile.cpp" />
     <ClCompile Include="hgz\hgz.cpp" />
     <ClCompile Include="hgz\HgzComboBox.cpp" />
