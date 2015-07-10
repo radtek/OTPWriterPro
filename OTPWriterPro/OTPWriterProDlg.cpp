@@ -789,7 +789,7 @@ void COTPWriterProDlg::OnBnClickedButtonWrite()
 
     }
 
-
+    u32 x = g_mem.SizeUsed();
     EditCtrlOutput(0, _T("需要写入字节数：%d\r\n"), numBytesToWrite);
     numBytesWritten = g_mem.Write(startAddr, numBytesToWrite);
     PrintCurrentTime();

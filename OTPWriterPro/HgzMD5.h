@@ -14,8 +14,8 @@ public:
 
     // for string
     void md5(CString &s, CString &sDigest);
-    void md5(TCHAR *s, TCHAR *sDigest = NULL);
-    void md5(char *s, char *sDigest = NULL);
+    //void md5(TCHAR *s, TCHAR *sDigest);
+    void md5(char *s, char *sDigest);
 
 private:
     UINT32 digest[4], a, b, c, d;

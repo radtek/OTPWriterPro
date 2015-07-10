@@ -53,7 +53,8 @@ CString CHgzMD5::md5( CStdioFile &f, CStatic *progress, TCHAR *sDigest )
     UINT32 byteRead = 0;
     int prog = 0;
     CString sProg;
-    progress->SetWindowText(_T("0%"));
+    if (progress)
+        progress->SetWindowText(_T("0%"));
     md5init();
 
     int i = 0;
@@ -78,7 +79,8 @@ CString CHgzMD5::md5( CStdioFile &f, CStatic *progress, TCHAR *sDigest )
         {
             prog = f.GetPosition()*100/f.GetLength();
             sProg.Format(_T("%d%%"), prog);
-            progress->SetWindowText(sProg);
+            if (progress)
+                progress->SetWindowText(sProg);
         }
     }
 
@@ -90,7 +92,8 @@ CString CHgzMD5::md5( CStdioFile &f, CStatic *progress, TCHAR *sDigest )
     }
     //AfxMessageBox(_T("md5(")+f.GetFileName()+_T(") = ")+s);
 
-    progress->SetWindowText(_T("100%"));
+    if (progress)
+        progress->SetWindowText(_T("100%"));
     return s;
 }
 
@@ -101,12 +104,12 @@ void CHgzMD5::md5( CString &s, CString &sDigest )
     sDigest = md5(buf, s.GetLength()*sizeof(TCHAR));
 }
 
-void CHgzMD5::md5( TCHAR *s, TCHAR *sDigest )
-{
-    md5((UINT8 *)s, _tcslen(s)*sizeof(TCHAR));
-}
+//void CHgzMD5::md5( TCHAR *s, TCHAR *sDigest )
+//{
+//    md5((UINT8 *)s, _tcslen(s)*sizeof(TCHAR));
+//}
 
-void CHgzMD5::md5( char *s, char *sDigest /*= NULL*/ )
+void CHgzMD5::md5( char *s, char *sDigest )
 {
     CString su = md5((UINT8 *)s, strlen(s));
     CStringA sa(su);
