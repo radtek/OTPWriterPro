@@ -23,7 +23,7 @@ protected:
 public:
     CString m_CPConfigFilePath;
 
-
+    #define u8 UINT8
     #define u16 UINT16
     #define u32 UINT32
     #define FIL CStdioFile
@@ -92,8 +92,8 @@ public:
 
 public:
     afx_msg void OnBnClickedButton1();
-    afx_msg void OnBnClickedButton6();
-    afx_msg void OnBnClickedButton7();
+    afx_msg void OnBnClickedButton_ParseConfigFile();
+    afx_msg void OnBnClickedButton_UpdateConfigFile();
     virtual BOOL OnInitDialog();
 
     void UpdateDisplay();

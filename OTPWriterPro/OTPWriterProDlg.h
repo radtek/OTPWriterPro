@@ -16,6 +16,8 @@
 #include "HgzMem.h"
 #include "OTPWriterPro.h"
 #include "Option.h"
+#include "RollnumAndCPConfigDialog.h"
+
 
 
 extern "C" {
@@ -62,6 +64,13 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 	virtual void PostNcDestroy();
+
+    void FillIntersectionOfBuffer(u8 *pBuf, const u32 addr1, const u32 len1, const u32 addr2, const u32 len2, const u8 data)
+    {
+        // Fill data into the intersection region of [addr, addr+len1-1] and [addr2, addr2+len2-1]: [max(addr1, addr1), min(addr1+len1-1, addr2+len2-1)]
+        for (u32 i = max(addr1, addr2); i <= min(addr1+len1-1, addr2+len2-1); i++)
+            pBuf[i-addr1] = data;
+    }
 
 public:
     //--------------------------------
@@ -153,8 +162,6 @@ public:
     CButton m_ctrlIgnoreMem;
     CButton m_ctrlWrite;
     CButton m_ctrlEncrypt;
-    CButton m_ctrlEnableRollnumWrite;
-    afx_msg void OnBnClickedCheckEnableRollnumWrite();
     CButton m_ctrlAuto;
     bool m_bOK;
     afx_msg void OnBnClickedButtonAuto();
@@ -170,6 +177,17 @@ public:
     afx_msg void OnBnClickedButtonBufferSearch();
     CHgzComboBox m_ctrlBufferSearch;
     afx_msg void OnBnClickedButton23();
+    CSplitButton m_ctrlRollnum;
+    CRollnumAndCPConfigDialog m_RollnumAndCPConfigDialog;
+    afx_msg void OnRollnumAndCPConfig();
+    afx_msg void OnRollnumEnable();
+
+    afx_msg void ProcessRollnum();
+
+    afx_msg void OnUpdateRollnumEnable(CCmdUI *pCmdUI);
+    BOOL m_bRollnumEnable;
+    afx_msg void OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);
+    afx_msg void OnBnClicked_RollnumEnable();
 };
 
 

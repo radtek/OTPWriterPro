@@ -63,8 +63,8 @@ void CRollnumAndCPConfigDialog::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CRollnumAndCPConfigDialog, CDialogEx)
     ON_BN_CLICKED(IDC_BUTTON1, &CRollnumAndCPConfigDialog::OnBnClickedButton1)
-    ON_BN_CLICKED(IDC_BUTTON6, &CRollnumAndCPConfigDialog::OnBnClickedButton6)
-    ON_BN_CLICKED(IDC_BUTTON7, &CRollnumAndCPConfigDialog::OnBnClickedButton7)
+    ON_BN_CLICKED(IDC_BUTTON6, &CRollnumAndCPConfigDialog::OnBnClickedButton_ParseConfigFile)
+    ON_BN_CLICKED(IDC_BUTTON7, &CRollnumAndCPConfigDialog::OnBnClickedButton_UpdateConfigFile)
     ON_BN_CLICKED(IDC_BUTTON3, &CRollnumAndCPConfigDialog::OnBnClickedButton3)
     ON_BN_CLICKED(IDC_BUTTON4, &CRollnumAndCPConfigDialog::OnBnClickedButton4)
     ON_BN_CLICKED(IDC_BUTTON5, &CRollnumAndCPConfigDialog::OnBnClickedButton5)
@@ -97,14 +97,14 @@ void CRollnumAndCPConfigDialog::OnBnClickedButton1()
 }
 
 
-void CRollnumAndCPConfigDialog::OnBnClickedButton6()
+void CRollnumAndCPConfigDialog::OnBnClickedButton_ParseConfigFile()
 {
     ConfigFile_Parser();
     UpdateDisplay();
 }
 
 
-void CRollnumAndCPConfigDialog::OnBnClickedButton7()
+void CRollnumAndCPConfigDialog::OnBnClickedButton_UpdateConfigFile()
 {
     // Check if all items ready
 
@@ -450,8 +450,8 @@ u32 CRollnumAndCPConfigDialog::SD_GetRFSynccode(CString& fileName, u32 rollnum)
 
 void CRollnumAndCPConfigDialog::OnBnClickedOk()
 {
-    // TODO: 在此添加控件通知处理程序代码
-    OnBnClickedButton7();
+    OnBnClickedButton_UpdateConfigFile();
+    OnBnClickedButton_ParseConfigFile();
 
     CDialogEx::OnOK();
 }
