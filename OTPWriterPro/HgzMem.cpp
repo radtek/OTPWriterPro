@@ -110,7 +110,7 @@ BOOL CHgzMem::FillBuf( UINT32 addr, UINT8 val, UINT32 dataLen )
     return dataLen;
 }
 
-
+#define OTPWriter_BUFFER_SIZE ((1024*2))
 INT32 CHgzMem::Write( UINT32 addr, UINT32 length )
 {
     if (length == 0)
@@ -145,8 +145,15 @@ INT32 CHgzMem::Write( UINT32 addr, UINT32 length )
     }
     // Send the terminating data-empty packet.
     r.MemWriteReport(addr+num, 0, m_buf.GetData()+addr+num);
-    r.SendReport(handle);
-
+    if (r.SendAndWaitToReceiveReport(handle) < 0) //r.SendReport(handle);
+    {
+        if (num % OTPWriter_BUFFER_SIZE)
+            num = (num/OTPWriter_BUFFER_SIZE)*OTPWriter_BUFFER_SIZE;
+        else if (num == 0)
+            num = 0;
+        else
+            num = num-OTPWriter_BUFFER_SIZE;
+    }
     hid_close(handle); /* Free handle objects. */
     hid_exit(); /* Free static HIDAPI objects. */
 

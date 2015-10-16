@@ -345,7 +345,7 @@ INT CHidReport::ReceiveReport( hid_device *handle, BOOL bPrint/* = TRUE*/ )
 	if (p.memPkt.cmdL1 == m_pkt.memPkt.cmdL1 && 
 		p.memPkt.cmdL2 == m_pkt.memPkt.cmdL2)
 	{
-        if (p.memPkt.csb & 0x01)
+        if (m_pkt.memPkt.csb & 0x01)
         {
             tcout << endl << _T("Device denied to execute the command.") << endl;
             return -1;
