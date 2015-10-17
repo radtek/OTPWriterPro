@@ -526,8 +526,8 @@ void COTPWriterProDlg::OnBnClickedButtonOpenFile()
     m_ctrlProgress.SetPos(0);
     m_ctrlListBuffer.EndEdit(TRUE);
 
-    CString strExt = _T("*.hex, *.bin|*.hex;*.bin|")
-                     _T("Hex Files (*.hex)|*.hex|Bin Files (*.bin)|*.bin|All Files (*.*)|*.*||");
+    CString strExt = _T("*.hex, *.bin, *.hexbin|*.hex;*.bin;*.hexbin|")
+                     _T("Hex Files (*.hex)|*.hex|Bin Files (*.bin)|*.bin|HexBin Files (*.hexbin)|*.hexbin|All Files (*.*)|*.*||");
     CFileDialog dlg(TRUE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, strExt);
     if (dlg.DoModal() != IDOK)
     {
@@ -601,6 +601,37 @@ void COTPWriterProDlg::OnBnClickedButtonOpenFile()
         g_mem.SizeUsed(mFile.Read(g_mem.GetBuf(), mFile.GetLength()));
         memset(g_mem.GetBufFlag(), 1, g_mem.SizeUsed());
     }
+    else if (fileExt.CompareNoCase(_T("HEXBIN")) == 0) 
+    {
+        mFile.Open(pathName, CFile::modeRead | CFile::typeText, &mExcept);
+        unsigned int addr = 0;
+        unsigned int fileLen = (unsigned int)mFile.GetLength();
+
+        if (fileLen) 
+        {
+            g_mem.ClearBufAll();
+        }
+        else 
+        {
+            AfxMessageBox(_T("File is empty!"));
+            mFile.Close();
+            return;
+        }
+
+        g_mem.ClearBufAll();
+
+        CHgzString str;
+        while (mFile.ReadString(str)) 
+        {
+            addr += str.ToHexArr(g_mem.GetBuf()+addr, _T(", *"), 1);
+            
+            int percent = 100 * mFile.GetPosition() / fileLen;
+            m_ctrlProgress.SetPos(percent);
+            EditCtrlOutput(-4, _T("%3d%%"), percent);
+        }
+        g_mem.SizeUsed(addr);
+        memset(g_mem.GetBufFlag(), 1, g_mem.SizeUsed());
+    }
 
 
     m_ctrlProgress.SetPos(100);
@@ -638,8 +669,8 @@ void COTPWriterProDlg::OnBnClickedButtonSaveAs()
 		return;
 	}
 	
-    CString strExt = _T("*.hex, *.bin|*.hex;*.bin|")
-        _T("Hex Files (*.hex)|*.hex|Bin Files (*.bin)|*.bin|All Files (*.*)|*.*||");
+    CString strExt = _T("*.hex, *.bin, *.hexbin|*.hex;*.bin;*.hexbin|")
+        _T("Hex Files (*.hex)|*.hex|Bin Files (*.bin)|*.bin|HexBin Files (*.hexbin)|*.hexbin|All Files (*.*)|*.*||");
     CFileDialog dlg(FALSE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, strExt);
 	if (dlg.DoModal() != IDOK)
 	{
@@ -698,8 +729,23 @@ void COTPWriterProDlg::OnBnClickedButtonSaveAs()
 		mFile.SeekToBegin();
 		mFile.Write(memBuf, memSize);
 	}
+    else if (fileExt.CompareNoCase(_T("hexbin")) == 0) {
+        mFile.Open(pathName, CFile::modeCreate | CFile::modeWrite | CFile::typeText, &mExcept);
+        mFile.SeekToBegin();
+        CString s;
+        for (u32 i = 0; i < memSize; i++)
+        {
+            if (i == (memSize-1))
+                s.AppendFormat(_T("0x%02X\n"), memBuf[i]);
+            else if (i%16 == 15)
+                s.AppendFormat(_T("0x%02X,\n"), memBuf[i]);
+            else
+                s.AppendFormat(_T("0x%02X, "), memBuf[i]);
+        }
+        mFile.WriteString(s);        
+    }
 	else {
-		MessageBox(_T("Only Hex/Bin file suported."));
+		MessageBox(_T("Only Hex/Bin/HexBin file suported."));
 		return;
 	}
 

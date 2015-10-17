@@ -1,0 +1,2 @@
+Enable OTP writing: 1
+Firmware file to write: SE67M_V10_20150126.bin
