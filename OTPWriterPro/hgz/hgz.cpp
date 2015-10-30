@@ -399,8 +399,6 @@ void hgzRevertByteOrder( UINT8 *addr, UINT bytes )
 
 void hgzRevertByteOrder( UINT8 *out, const UINT8 *in, UINT bytes )
 {
-    unsigned char x;
-
     if (bytes < 2) return;
     
     for (int i = 0; i < bytes; i++) 

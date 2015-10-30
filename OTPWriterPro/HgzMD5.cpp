@@ -28,15 +28,7 @@ CString CHgzMD5::md5( UINT8 * buf, UINT32 byteLen, TCHAR *sDigest )
 
     md5end(begin, end-begin, byteLen);
 
-    CString s;
-    for(int i = 0; i < 16; i++)
-    {
-        s.AppendFormat(_T("%02x"), ((UINT8 *)&digest)[i]);
-        //_stprintf(sDigest[i], _T("%02x"), x[i]);
-    }
-    //AfxMessageBox(_T("md5(buffer) = ")+s);
-    
-    return s;
+    return to_CString();
 }
 
 void CHgzMD5::md5( CFile &f, TCHAR *sDigest )
@@ -94,6 +86,9 @@ CString CHgzMD5::md5( CStdioFile &f, CStatic *progress, TCHAR *sDigest )
 
     if (progress)
         progress->SetWindowText(_T("100%"));
+    
+    delete [] begin1;
+
     return s;
 }
 
