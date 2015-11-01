@@ -40,13 +40,28 @@ public:
         return s;
     }
 
-    CString to_CString(CString &s)
-    {
-        TCHAR x[33];
-        to_string(x);
-        s = x;
-        return s;
-    }
+	tstring to_string()
+	{
+		TCHAR x[33];
+		to_string(x);
+		tstring s = x;
+		return s;
+	}
+
+	CString to_CString(CString &s)
+	{
+		TCHAR x[33];
+		to_string(x);
+		s = x;
+		return s;
+	}
+	CString to_CString()
+	{
+		TCHAR x[33];
+		to_string(x);
+		CString s = x;
+		return s;
+	}
 
     void GetValue(UINT32 *val)
     {

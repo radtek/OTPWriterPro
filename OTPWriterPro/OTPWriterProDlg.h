@@ -28,11 +28,7 @@ extern "C" {
 
 // COTPWriterProDlg ¶Ô»°¿ò
 #include "afxwin.h"
-#include "afxcmn.h"
-#include "d:\users\hgz\documents\appdata\visual studio 2010\projects\otpwriterpro\otpwriterpro\hgz\hgzcombobox.h"
-#include "d:\users\hgz\documents\appdata\visual studio 2010\projects\otpwriterpro\otpwriterpro\hgz\hgzcombobox.h"
-#include "d:\users\hgz\documents\appdata\visual studio 2010\projects\otpwriterpro\otpwriterpro\hgz\hgzcombobox.h"
-#include "d:\users\hgz\documents\appdata\visual studio 2010\projects\otpwriterpro\otpwriterpro\hgz\hgzcombobox.h"
+#include "hgz\hgzcombobox.h"
 
 
 
