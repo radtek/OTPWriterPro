@@ -225,12 +225,12 @@ BOOL COTPWriterProDlg::OnInitDialog()
     // get rollnum settings from Windows Registry
     TCHAR stemp[1024];
     GetCurrentDirectory(1024, stemp);
-    m_RollnumAndCPConfigDialog.m_CPConfigFilePath.Format(_T("%s"), stemp);
+    m_RollnumAndCPConfigDialog.m_CPConfigFilePath += stemp;
     s = AfxGetApp()->GetProfileString(_T("Settings"), _T("CPConfigFilePath"));
     if (s.Find(_T(":")) == -1)
         m_RollnumAndCPConfigDialog.m_CPConfigFilePath += s;
     else
-        m_RollnumAndCPConfigDialog.m_CPConfigFilePath = s;
+        m_RollnumAndCPConfigDialog.m_CPConfigFilePath = s.GetString();
 
     m_ctrlRollnum.SetDropDownMenu(IDR_MENU1, 2);
     m_bRollnumEnable = AfxGetApp()->GetProfileInt(_T("Settings"), _T("EnableRollnum"), 0); // 
@@ -640,10 +640,10 @@ void COTPWriterProDlg::OnBnClickedButtonOpenFile()
 
     mFile.Open(pathName, CFile::modeRead | CFile::shareDenyNone | CFile::typeBinary);
     CHgzMD5 md5;
-    CString s = md5.md5(mFile);
+    CString s = md5.md5bin(mFile);
     PrintCurrentTime();
     EditCtrlOutput(0, _T("md5(%s) = %s\r\n"), mFile.GetFileName(), s);
-    s = md5.md5(g_mem.GetBuf(), g_mem.SizeUsed());
+    s = md5.md5buf(g_mem.GetBuf(), g_mem.SizeUsed());
     PrintCurrentTime();
     EditCtrlOutput(0, _T("md5(buffer) = %s\r\n"), s);
     mFile.Close();
@@ -883,7 +883,7 @@ void COTPWriterProDlg::OnBnClickedButtonRead()
 
     CString s;
     CHgzMD5 md5;
-    s = md5.md5(g_mem.GetBuf(), g_mem.SizeUsed());
+    s = md5.md5buf(g_mem.GetBuf(), g_mem.SizeUsed());
     PrintCurrentTime();
     EditCtrlOutput(0, _T("md5(buffer) = %s\r\n"), s);
 
@@ -1519,7 +1519,7 @@ void COTPWriterProDlg::OnBnClickedButtonBufferDataProfile()
     //////////////////////////////////////////////////////
     // for MD5 test
     CHgzMD5 md5;
-    md5.md5(g_mem.GetBuf(), g_mem.SizeUsed());
+    md5.md5buf(g_mem.GetBuf(), g_mem.SizeUsed());
     /*CString sDigest;
     CString s(_T("jklmn"));*/
     //md5.md5(_T("jklmn"));

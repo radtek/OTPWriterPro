@@ -69,28 +69,12 @@ void CDlgMD5::OnEnChangeEdit6()
     // 同时将 ENM_CHANGE 标志“或”运算到掩码中。
 
     // TODO:  在此添加控件通知处理程序代码
-    CString s, sDigest;
-    CStringA sa;
-    char saDigest[128/8*2+1];
-    saDigest[128/8*2] = '\0';
-    
-    m_ctrlStringToBeMD5ed.GetWindowText(s);
-
-    CString sCoding;
-    m_ctrlStringCoding.GetWindowText(sCoding);
+    CString s, sCoding, sDigest;
     CHgzMD5 md5;
-    if (sCoding.CompareNoCase(_T("ANSI")) == 0)
-    {
-        sa = s; // TCHAR -> char
 
-        md5.md5(sa.GetBuffer(), saDigest);
-        sDigest = saDigest;
-    }
-    else if (sCoding.CompareNoCase(_T("Unicode")) == 0)
-    {
-        md5.md5(s, sDigest);
-    }
-    
+    m_ctrlStringToBeMD5ed.GetWindowText(s);
+    m_ctrlStringCoding.GetWindowText(sCoding);
+    md5.md5str(s, sDigest, (sCoding.CompareNoCase(_T("Unicode")) == 0));    
     m_ctrlStringMD5.SetWindowText(sDigest);
 }
 
@@ -207,7 +191,7 @@ void CDlgMD5::OnEnChangeMfceditbrowse1()
     mFile.Open(filePath, CFile::modeRead | CFile::shareDenyNone | CFile::typeBinary);
 
     CHgzMD5 md5;
-    CString s = md5.md5(mFile, &m_ctrlMD5Progress);
+    CString s = md5.md5bin(mFile, &m_ctrlMD5Progress);
 
     mFile.Close();
 

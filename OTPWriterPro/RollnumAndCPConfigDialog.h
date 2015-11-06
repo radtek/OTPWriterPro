@@ -1,5 +1,8 @@
 #pragma once
 #include "afxwin.h"
+#include "hgz\HgzComboBox.h"
+#include "HgzMD5.h"
+#include "afxcmn.h"
 
 
 // CRollnumAndCPConfigDialog ¶Ô»°¿ò
@@ -21,7 +24,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 public:
-    CString m_CPConfigFilePath;
+    ATL::CPath m_CPConfigFilePath;
 
     #define u8 UINT8
     #define u16 UINT16
@@ -45,7 +48,7 @@ public:
 
     typedef struct 
     {
-        bool bEnableOTPWriting;	
+        u32 enableOTPWriting;	
 
         CString Config;
         CString Program;
@@ -83,22 +86,27 @@ public:
     } CONFIG_FILE_CHECK_t;
     CONFIG_FILE_CHECK_t m_ConfigFileCheck;
 
-    static const TCHAR s_strConfigFilePath1[];
+    /*static const TCHAR s_strConfigFilePath1[];
     static const TCHAR s_strConfigFilePath2[];
     static const TCHAR s_strConfigFileName1[];
-    static const TCHAR s_strConfigFileName2[];
+    static const TCHAR s_strConfigFileName2[];*/
+    static const ATL::CPath s_strConfigFilePath1;
+    static const ATL::CPath s_strConfigFilePath2;
+    static const ATL::CPath s_strConfigFileName1;
+    static const ATL::CPath s_strConfigFileName2;
     static const TCHAR s_strLinePrefix[][50];
     TCHAR s_strLineValue[CFG_PARAM_NUM][50];
 
 public:
-    afx_msg void OnBnClickedButton1();
+    afx_msg void OnBnClickedButton_SelectConfigFilePath();
     afx_msg void OnBnClickedButton_ParseConfigFile();
     afx_msg void OnBnClickedButton_UpdateConfigFile();
+
     virtual BOOL OnInitDialog();
 
     void UpdateDisplay();
 
-    CButton m_ctrlEnableOTPWriting;
+    CHgzComboBox m_ctrlEnableOTPWriting;
     CEdit m_ctrlFirmwareFileToWrite;
     afx_msg void OnBnClickedButton3();
     void ConfigFile_Parser(void);
@@ -119,4 +127,10 @@ public:
     bool IsRollnumValid(void);
     bool IsRFSyncodeValid(void);
     bool WriteRollnumToConfigFile(void);
+    afx_msg void OnBnClickedButton_GenerateVerificationFiles();
+    CButton m_ctrl_EnMD5Gen_CP_Config_File1;
+    CButton m_ctrl_EnMD5Gen_CP_Config_File2;
+    CButton m_ctrl_EnMD5Gen_FirmwareToWrite;
+    CButton m_ctrl_EnMD5Gen_RFSynFile4B;
+    CButton m_ctrl_EnMD5Gen_RFSynFile3B;
 };

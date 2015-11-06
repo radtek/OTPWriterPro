@@ -1,7 +1,8 @@
 #include "StdAfx.h"
 #include "HgzMD5.h"
 #include ".\hgz\hgz.h"
-
+#include <time.h>
+#include "HgzTimer.h"
 
 CHgzMD5::CHgzMD5(void)
 {
@@ -13,12 +14,12 @@ CHgzMD5::~CHgzMD5(void)
 {
 }
 
-
-CString CHgzMD5::md5( UINT8 * buf, UINT32 byteLen, TCHAR *sDigest )
+// md5_buffer
+CString CHgzMD5::md5buf( UINT8 * buf, UINT32 byteLen, TCHAR *sDigest /*= NULL*/ )
 {
     UINT8 *begin = buf;
     UINT8 *end = begin + byteLen;
-    
+
     md5init();
 
     for (; begin+(512/8) <= end; begin+=(512/8))
@@ -28,90 +29,253 @@ CString CHgzMD5::md5( UINT8 * buf, UINT32 byteLen, TCHAR *sDigest )
 
     md5end(begin, end-begin, byteLen);
 
+    if (sDigest)
+        to_string(sDigest);
+
     return to_CString();
 }
 
-void CHgzMD5::md5( CFile &f, TCHAR *sDigest )
+// md5_string
+void CHgzMD5::md5str( TCHAR *s, TCHAR *sDigest, bool bUnicode /*= false*/ )
 {
-
+    CString su;
+    
+    if (bUnicode)
+        su = md5buf((UINT8 *)CStringW(s).GetBuffer(), _tcslen(s)*2);
+    else
+        su = md5buf((UINT8 *)CStringA(s).GetBuffer(), _tcslen(s)*1);
+    
+    _tcscpy(sDigest, su.GetBuffer());
 }
 
-CString CHgzMD5::md5( CStdioFile &f, CStatic *progress, TCHAR *sDigest )
+void CHgzMD5::md5str( CString &s, CString &sDigest, bool bUnicode /*= false*/ )
 {
-    UINT8 *begin = new UINT8[1024*2];
-    UINT8 *begin1 = begin;
-    UINT8 *end   = begin + 1024*2;
-    UINT32 byteLen = f.GetLength();
-    UINT32 byteRead = 0;
-    int prog = 0;
-    CString sProg;
+    if (bUnicode)
+        sDigest = md5buf((UINT8*)((CStringW)s).GetBuffer(), s.GetLength()*2);
+    else
+        sDigest = md5buf((UINT8*)((CStringA)s).GetBuffer(), s.GetLength()*1);
+}
+
+// md5_bin_file
+CString CHgzMD5::md5binseg( CStdioFile &fin, int bytes /*= 0*/, CStatic *progress /*= NULL*/ )
+{
+    UINT32 byteLen = fin.GetLength() - fin.GetPosition();
+    if (bytes < byteLen)
+        byteLen = bytes;
+    if (bytes == 0)
+    {
+        fin.SeekToBegin();
+        byteLen = fin.GetLength();
+    }
+
+    int perOpSize = 1024*2;
+    if (byteLen<perOpSize)
+        perOpSize = byteLen;
+
+    UINT8 *buf = new UINT8[perOpSize];
+    
     if (progress)
         progress->SetWindowText(_T("0%"));
-    md5init();
 
+    UINT32 cnt = 0;
+    CHgzTimer timer;
+    int prog = 0;
     int i = 0;
-    f.SeekToBegin();
-    while(byteRead = f.Read(begin, 1024*2))
+    md5init();
+    while(cnt < byteLen)
     {
-        end = begin + byteRead;
+        UINT32 byteRead = 0;
+        if (perOpSize > byteLen-cnt)
+            byteRead = fin.Read(buf, byteLen-cnt);
+        else
+            byteRead = fin.Read(buf, perOpSize);
+        cnt += byteRead;
+
+        UINT8 *begin = buf;
+        UINT8 *end = begin + byteRead;
+
         for (; begin+(512/8) <= end; begin+=(512/8))
         {
             md5core(begin);
         }
 
-        if (f.GetPosition() == f.GetLength())
+        if (cnt == byteLen)
         {
             md5end(begin, end-begin, byteLen);
             break;
         }
 
-        begin = begin1;
-        
-        if ((++i%10 == 0) && prog < f.GetPosition()*100/f.GetLength())
+        if ((++i%10 == 0) && prog < fin.GetPosition()*100/fin.GetLength())
         {
-            prog = f.GetPosition()*100/f.GetLength();
-            sProg.Format(_T("%d%%"), prog);
+            prog = fin.GetPosition()*100/fin.GetLength();
+            CString sProg;
+            sProg.Format(_T("%d%%, %ds"), prog, timer.GetSpan());
             if (progress)
                 progress->SetWindowText(sProg);
         }
     }
 
-    CString s;
-    for(int i = 0; i < 16; i++)
+    if (progress && (fin.GetPosition()==fin.GetLength()))
     {
-        s.AppendFormat(_T("%02x"), ((UINT8 *)&digest)[i]);
-        //_stprintf(sDigest[i], _T("%02x"), x[i]);
+        CString sProg;
+        sProg.Format(_T("100%%, %ds"), timer.GetSpan());
+        progress->SetWindowText(sProg);
     }
-    //AfxMessageBox(_T("md5(")+f.GetFileName()+_T(") = ")+s);
 
+    delete [] buf;
+
+    return to_CString();
+
+}
+
+CString CHgzMD5::md5bin( CStdioFile &fin, CStatic *progress )
+{
+    return md5binseg(fin, 0, progress);
+}
+
+CString CHgzMD5::md5bin( CStdioFile &fin, CStdioFile *fout, int perBytes /*= 0*/, CStatic *progress /*= NULL*/ )
+{
+    if (!fout)
+        return md5binseg(fin, 0, progress)+_T("\n");
+
+    fin.SeekToBegin();
+    fout->SeekToEnd();
+
+    int i = 0;
+    while(fin.GetPosition() != fin.GetLength())
+    {
+        i++;
+        fout->WriteString(md5binseg(fin, perBytes, progress)+_T("\n"));
+    }
+
+    CString si;
+    si.Format(_T("%d"), i);
+    return si;
+}
+
+CString CHgzMD5::md5bin( CString &fin, CString *fout /*= NULL*/, int perBytes /*= 0*/, CStatic *progress /*= NULL*/ )
+{
+    CHgzPath inf(fin), outf;
+    if (fout)
+        outf = CHgzPath(fout);
+    else
+    {
+        outf = inf;
+        outf.ChangeFileExt(_T(".md5"));
+    }
+    outf.CreateDirectory();
+
+    CStdioFile mFile, mFileMD5;
+    //CFileException mExcept;
+
+    mFile.Open(fin, CFile::modeRead | CFile::shareDenyNone | CFile::typeBinary);
+    mFileMD5.Open(outf.GetFullPath(), CFile::modeCreate /*| CFile::modeNoTruncate*/ | CFile::modeReadWrite | CFile::shareDenyNone | CFile::typeText);
+    mFileMD5.SetLength(0);
+    CString cnt = md5bin(mFile, &mFileMD5, perBytes, progress);
+    mFile.Close();
+    mFileMD5.Close();
+
+    return cnt;
+}
+
+CString CHgzMD5::md5bin( CString & fin, CString * fout, CStatic * progress )
+{
+    return md5bin(fin, fout, 0, progress);
+}
+
+
+// md5_txt_file
+int CHgzMD5::md5txt( CStdioFile &fin, CStdioFile &fout, bool bUnicode /*= false*/, CStatic *progress /*= NULL*/ )
+{
+    // As to txt file, md5 each line of its Ascii string and store it line to line.
+
+    if (fin.GetLength() == 0)
+        return 0;
+
+    int cnt = 0;
+    CString s, smd5;
+
+    fin.SeekToBegin();
+    fout.SeekToEnd();
+
+    int prog = 0, prog1 = 0;
+
+    __time64_t time1, time2;
+    _time64(&time1);
+    while (fin.ReadString(s))
+    {
+        md5str(s, smd5);
+        fout.WriteString(smd5+_T("\n"));
+        cnt++;
+
+        if ((cnt%1000 == 0) && prog < (prog1 = fin.GetPosition()*100/fin.GetLength()))
+        {
+            prog = prog1;
+            CString sProg;
+            //sProg.Format(_T("%s: %d%%"), fin.GetFileName(), prog);
+            _time64(&time2);
+            sProg.Format(_T("%d%%, %ds"), prog, time2-time1);
+            if (progress)
+                progress->SetWindowText(sProg);
+        }
+    }
     if (progress)
-        progress->SetWindowText(_T("100%"));
-    
-    delete [] begin1;
+    {
+        CString sProg;
+        //progress->SetWindowText(fin.GetFileName() + _T(": 100%"));
 
-    return s;
+        _time64(&time2);
+        //s.Format(_T("%s    Elapsed time is %d seconds."), fin.GetFileName() + _T(": 100%."), time2 - time1);
+        sProg.Format(_T("100%%, %ds"), time2 - time1);
+        progress->SetWindowText(sProg);
+    }
+
+    return cnt;
 }
 
-void CHgzMD5::md5( CString &s, CString &sDigest )
+int CHgzMD5::md5txt( CString &fin, CString *fout /*= NULL*/, bool bUnicode /*= false*/, CStatic *progress /*= NULL*/ )
 {
-    UINT8 *buf = (UINT8 *)s.GetBuffer();
-    
-    sDigest = md5(buf, s.GetLength()*sizeof(TCHAR));
+    int cnt = 0;
+
+    CHgzPath inf(fin), outf, tmppath;
+    if (fout)
+        outf = CHgzPath(fout);
+    else
+    {
+        outf = inf;
+        outf.ChangeFileExt(_T(".md5"));
+    }
+    outf.CreateDirectory();
+
+    CStdioFile mFile, mFileMD5;
+    //CFileException mExcept;
+
+    mFile.Open(fin, CFile::modeRead | CFile::shareDenyNone | CFile::typeText);
+    mFileMD5.Open(outf.GetFullPath(), CFile::modeCreate /*| CFile::modeNoTruncate*/ | CFile::modeReadWrite | CFile::shareDenyNone | CFile::typeText);
+    mFileMD5.SetLength(0);
+    cnt = md5txt(mFile, mFileMD5, bUnicode, progress);
+    mFile.Close();
+    mFileMD5.Close();
+
+    return cnt;
 }
 
-//void CHgzMD5::md5( TCHAR *s, TCHAR *sDigest )
-//{
-//    md5((UINT8 *)s, _tcslen(s)*sizeof(TCHAR));
-//}
-
-void CHgzMD5::md5( char *s, char *sDigest )
+// md5_all_file
+CString CHgzMD5::md5file( CString &fin, CString *fout /*= NULL*/, bool bTxtFile /*= false*/, int bUnicode_perBytes /*= 0*/, CStatic *progress /*= NULL*/ )
 {
-    CString su = md5((UINT8 *)s, strlen(s));
-    CStringA sa(su);
-    //strcpy(sDigest, sa.GetBuffer());
-    strcpy(sDigest, CStringA(su).GetBuffer());
+    if (!bTxtFile)
+        return md5bin(fin, fout, bUnicode_perBytes, progress);
+    else // As to txt file, md5 each line of its Ascii string and store it line to line.
+    {
+        CString sLineCount;
+        sLineCount.Format(_T("%d"), md5txt(fin, fout, bUnicode_perBytes, progress));
+        return sLineCount; // CString format of line count.
+    }
 }
 
+//
+// Core md5 functions, private for internal call.
+////////////////////////////////////////////////////
 void CHgzMD5::md5init( void )
 {
     // 初始化链接变量
@@ -124,22 +288,22 @@ void CHgzMD5::md5init( void )
 
 void CHgzMD5::md5core( const UINT8 *x )
 {
-    #define F(x, y, z) (((x) & (y)) | ((~x) & (z)))
-    #define G(x, y, z) (((x) & (z)) | ((y) & (~z)))
-    #define H(x, y, z) ((x) ^ (y) ^ (z))
-    #define I(x, y, z) ((y) ^ ((x) | (~z)))
+#define F(x, y, z) (((x) & (y)) | ((~x) & (z)))
+#define G(x, y, z) (((x) & (z)) | ((y) & (~z)))
+#define H(x, y, z) ((x) ^ (y) ^ (z))
+#define I(x, y, z) ((y) ^ ((x) | (~z)))
 
-    #define RL(x, y) (((x) << (y)) | ((x) >> (32 - (y)))) //x 循环左移 y 位，注意是循环左移，不是左移。
+#define RL(x, y) (((x) << (y)) | ((x) >> (32 - (y)))) //x 循环左移 y 位，注意是循环左移，不是左移。
 
     /*
-       假设Mj表示消息的第j个子分组（从0到15），常数ti是4294967296*abs( sin(i) ）的整数部分，i 取值从1到64，单位是弧度。（4294967296=2**32）
+    假设Mj表示消息的第j个子分组（从0到15），常数ti是4294967296*abs( sin(i) ）的整数部分，i 取值从1到64，单位是弧度。（4294967296=2**32）
     */
-    #define FF(a, b, c, d, Mj, s, ti) a = b + (RL((a + F(b,c,d) + Mj + ti),s))
-    #define GG(a, b, c, d, Mj, s, ti) a = b + (RL((a + G(b,c,d) + Mj + ti),s))
-    #define HH(a, b, c, d, Mj, s, ti) a = b + (RL((a + H(b,c,d) + Mj + ti),s))
-    #define II(a, b, c, d, Mj, s, ti) a = b + (RL((a + I(b,c,d) + Mj + ti),s))
-    
-    
+#define FF(a, b, c, d, Mj, s, ti) a = b + (RL((a + F(b,c,d) + Mj + ti),s))
+#define GG(a, b, c, d, Mj, s, ti) a = b + (RL((a + G(b,c,d) + Mj + ti),s))
+#define HH(a, b, c, d, Mj, s, ti) a = b + (RL((a + H(b,c,d) + Mj + ti),s))
+#define II(a, b, c, d, Mj, s, ti) a = b + (RL((a + I(b,c,d) + Mj + ti),s))
+
+
     /////////////////////////////////////////////
     const UINT32 *X = (const UINT32 *)x;
 
@@ -154,7 +318,7 @@ void CHgzMD5::md5core( const UINT8 *x )
     }
 
     //MD5核心算法,供64轮
-    
+
     a = digest[0];
     b = digest[1];
     c = digest[2];
@@ -258,3 +422,4 @@ void CHgzMD5::md5end( UINT8 *begin, UINT32 len, UINT32 originalByteLen )
     memcpy(x+(512-64)/8, (const UINT8*)&originalBitLen, (64/8));    //文件末尾加入原文件的bit长度
     md5core(x);
 }
+

@@ -2,6 +2,8 @@
 
 #include <string>
 #include "hgz\hgz.h"
+#include "HgzPath.h"
+#include <atlpath.h>
 using std::string;
 using std::wstring;
 
@@ -12,17 +14,27 @@ public:
     ~CHgzMD5(void);
 
     // for buffer
-    CString md5(UINT8 * buf, UINT32 byteLen, TCHAR *sDigest = NULL);
+    CString md5buf(UINT8 * buf, UINT32 byteLen, TCHAR *sDigest = NULL);
     
-    // for file
-    void md5(CFile &f, TCHAR *sDigest = NULL);
-    CString md5(CStdioFile &f, CStatic *progress = NULL, TCHAR *sDigest = NULL);
-
     // for string
-    void md5(CString &s, CString &sDigest);
-    //void md5(TCHAR *s, TCHAR *sDigest);
-    void md5(char *s, char *sDigest);
+    void md5str(TCHAR *s, TCHAR *sDigest, bool bUnicode = false);
+    void md5str(CString &s, CString &sDigest, bool bUnicode = false);
 
+    // for bin file
+    CString md5binseg(CStdioFile &fin, int bytes = 0, CStatic *progress = NULL);
+    CString md5bin(CStdioFile &fin, CStatic *progress = NULL);
+    CString md5bin(CStdioFile &fin, CStdioFile *fout, int perBytes = 0, CStatic *progress = NULL);
+    CString md5bin(CString & fin, CString * fout, CStatic * progress);
+    CString md5bin(CString &fin, CString *fout = NULL, int perBytes = 0, CStatic *progress = NULL);
+    
+    // for txt file
+    int md5txt(CStdioFile &fin, CStdioFile &fout, bool bUnicode = false, CStatic *progress = NULL);
+    int md5txt(CString &fin, CString *fout = NULL, bool bUnicode = false, CStatic *progress = NULL);
+    
+    // for all file
+    CString md5file(CString &fin, CString *fout = NULL, bool bTxtFile = false, int bUnicode_perBytes = 0, CStatic *progress = NULL);
+
+    // to strings
     void to_string(TCHAR *str)
     {
         for(int i = 0; i < 16; i++)

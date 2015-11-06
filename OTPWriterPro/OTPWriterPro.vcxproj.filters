@@ -108,6 +108,12 @@
     <ClInclude Include="HgzEditBrowseCtrl.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="HgzPath.h">
+      <Filter>hgz</Filter>
+    </ClInclude>
+    <ClInclude Include="HgzTimer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="OTPWriterPro.cpp">
@@ -165,6 +171,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="HgzEditBrowseCtrl.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="HgzPath.cpp">
+      <Filter>hgz</Filter>
+    </ClCompile>
+    <ClCompile Include="HgzTimer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

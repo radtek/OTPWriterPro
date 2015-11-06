@@ -21,7 +21,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>Static</UseOfMfc>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -116,6 +116,8 @@
     <ClInclude Include="HgzMD5.h" />
     <ClInclude Include="HgzMem.h" />
     <ClInclude Include="HgzEditBrowseCtrl.h" />
+    <ClInclude Include="HgzPath.h" />
+    <ClInclude Include="HgzTimer.h" />
     <ClInclude Include="hgz\HexFile.h" />
     <ClInclude Include="hgz\hgz.h" />
     <ClInclude Include="hgz\HgzComboBox.h" />
@@ -140,6 +142,8 @@
     <ClCompile Include="HgzMD5.cpp" />
     <ClCompile Include="HgzMem.cpp" />
     <ClCompile Include="HgzEditBrowseCtrl.cpp" />
+    <ClCompile Include="HgzPath.cpp" />
+    <ClCompile Include="HgzTimer.cpp" />
     <ClCompile Include="hgz\HexFile.cpp" />
     <ClCompile Include="hgz\hgz.cpp" />
     <ClCompile Include="hgz\HgzComboBox.cpp" />
