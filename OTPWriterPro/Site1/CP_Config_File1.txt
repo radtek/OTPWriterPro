@@ -1,2 +1,2 @@
-Enable OTP writing: 2
+Enable OTP writing: 1
 Firmware file to write: SE67D_V11_20151012_DC3D.BIN

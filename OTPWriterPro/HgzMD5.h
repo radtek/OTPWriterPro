@@ -17,15 +17,15 @@ public:
     CString md5buf(UINT8 * buf, UINT32 byteLen, TCHAR *sDigest = NULL);
     
     // for string
-    void md5str(TCHAR *s, TCHAR *sDigest, bool bUnicode = false);
-    void md5str(CString &s, CString &sDigest, bool bUnicode = false);
+    CString md5str(TCHAR *s, TCHAR *sDigest = NULL, bool bUnicode = false);
+    CString md5str(CString &s, CString *sDigest = NULL, bool bUnicode = false);
 
     // for bin file
-    CString md5binseg(CStdioFile &fin, int bytes = 0, CStatic *progress = NULL);
-    CString md5bin(CStdioFile &fin, CStatic *progress = NULL);
-    CString md5bin(CStdioFile &fin, CStdioFile *fout, int perBytes = 0, CStatic *progress = NULL);
-    CString md5bin(CString & fin, CString * fout, CStatic * progress);
-    CString md5bin(CString &fin, CString *fout = NULL, int perBytes = 0, CStatic *progress = NULL);
+    CString md5binseg(CStdioFile &fin,                          int bytes    = 0, CStatic *progress = NULL);
+    CString md5bin   (CStdioFile &fin,                                            CStatic *progress = NULL);
+    CString md5bin   (CStdioFile &fin, CStdioFile *fout,        int perBytes = 0, CStatic *progress = NULL);
+    CString md5bin   (CString    &fin, CString    *fout = NULL, int perBytes = 0, CStatic *progress = NULL);
+    CString md5bin   (CString    &fin, CString    *fout,                          CStatic *progress);
     
     // for txt file
     int md5txt(CStdioFile &fin, CStdioFile &fout, bool bUnicode = false, CStatic *progress = NULL);
@@ -35,16 +35,17 @@ public:
     CString md5file(CString &fin, CString *fout = NULL, bool bTxtFile = false, int bUnicode_perBytes = 0, CStatic *progress = NULL);
 
     // to strings
-    void to_string(TCHAR *str)
+    TCHAR* to_string(TCHAR *str)
     {
         for(int i = 0; i < 16; i++)
         {
             _stprintf(str+2*i, _T("%02x"), ((UINT8 *)&digest)[i]);
         }
         str[32] = _T('\0');
+        return str;
     }
 
-    tstring to_string(tstring &s)
+    tstring& to_string(tstring &s)
     {
         TCHAR x[33];
         to_string(x);
@@ -60,7 +61,7 @@ public:
 		return s;
 	}
 
-	CString to_CString(CString &s)
+	CString& to_CString(CString &s)
 	{
 		TCHAR x[33];
 		to_string(x);

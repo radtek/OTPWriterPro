@@ -69,13 +69,12 @@ void CDlgMD5::OnEnChangeEdit6()
     // 同时将 ENM_CHANGE 标志“或”运算到掩码中。
 
     // TODO:  在此添加控件通知处理程序代码
-    CString s, sCoding, sDigest;
+    CString s, sCoding;
     CHgzMD5 md5;
 
     m_ctrlStringToBeMD5ed.GetWindowText(s);
     m_ctrlStringCoding.GetWindowText(sCoding);
-    md5.md5str(s, sDigest, (sCoding.CompareNoCase(_T("Unicode")) == 0));    
-    m_ctrlStringMD5.SetWindowText(sDigest);
+    m_ctrlStringMD5.SetWindowText(md5.md5str(s, NULL, (sCoding.CompareNoCase(_T("Unicode")) == 0)));
 }
 
 

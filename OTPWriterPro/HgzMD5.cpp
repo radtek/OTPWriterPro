@@ -36,24 +36,34 @@ CString CHgzMD5::md5buf( UINT8 * buf, UINT32 byteLen, TCHAR *sDigest /*= NULL*/ 
 }
 
 // md5_string
-void CHgzMD5::md5str( TCHAR *s, TCHAR *sDigest, bool bUnicode /*= false*/ )
+CString CHgzMD5::md5str( TCHAR *s, TCHAR *sDigest /*= NULL*/, bool bUnicode /*= false*/ )
 {
     CString su;
     
     if (bUnicode)
-        su = md5buf((UINT8 *)CStringW(s).GetBuffer(), _tcslen(s)*2);
+        su = md5buf((UINT8 *)CStringW(s).GetBuffer(), _tcslen(s)*2, sDigest);
     else
-        su = md5buf((UINT8 *)CStringA(s).GetBuffer(), _tcslen(s)*1);
-    
-    _tcscpy(sDigest, su.GetBuffer());
+        su = md5buf((UINT8 *)CStringA(s).GetBuffer(), _tcslen(s)*1, sDigest);
+
+    return su;
 }
 
-void CHgzMD5::md5str( CString &s, CString &sDigest, bool bUnicode /*= false*/ )
+CString CHgzMD5::md5str( CString &s, CString *sDigest /*= NULL*/, bool bUnicode /*= false*/ )
 {
-    if (bUnicode)
-        sDigest = md5buf((UINT8*)((CStringW)s).GetBuffer(), s.GetLength()*2);
+    if (sDigest)
+    {
+        if (bUnicode)
+            return *sDigest = md5buf((UINT8*)((CStringW)s).GetBuffer(), s.GetLength()*2);
+        else
+            return *sDigest = md5buf((UINT8*)((CStringA)s).GetBuffer(), s.GetLength()*1);
+    }
     else
-        sDigest = md5buf((UINT8*)((CStringA)s).GetBuffer(), s.GetLength()*1);
+    {
+        if (bUnicode)
+            return md5buf((UINT8*)((CStringW)s).GetBuffer(), s.GetLength()*2);
+        else
+            return md5buf((UINT8*)((CStringA)s).GetBuffer(), s.GetLength()*1);
+    }
 }
 
 // md5_bin_file
@@ -193,7 +203,7 @@ int CHgzMD5::md5txt( CStdioFile &fin, CStdioFile &fout, bool bUnicode /*= false*
         return 0;
 
     int cnt = 0;
-    CString s, smd5;
+    CString s;
 
     fin.SeekToBegin();
     fout.SeekToEnd();
@@ -204,8 +214,7 @@ int CHgzMD5::md5txt( CStdioFile &fin, CStdioFile &fout, bool bUnicode /*= false*
     _time64(&time1);
     while (fin.ReadString(s))
     {
-        md5str(s, smd5);
-        fout.WriteString(smd5+_T("\n"));
+        fout.WriteString(md5str(s)+_T("\n"));
         cnt++;
 
         if ((cnt%1000 == 0) && prog < (prog1 = fin.GetPosition()*100/fin.GetLength()))

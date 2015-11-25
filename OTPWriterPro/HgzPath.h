@@ -127,7 +127,7 @@ private:
     {
         _tcscpy_s(_path_buffer, fullPath); split();
     }
-
+    
 };
 
 #endif
