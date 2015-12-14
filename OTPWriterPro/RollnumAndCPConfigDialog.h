@@ -3,6 +3,7 @@
 #include "hgz\HgzComboBox.h"
 #include "HgzMD5.h"
 #include "afxcmn.h"
+//#include "uxtheme.h"
 
 
 // CRollnumAndCPConfigDialog ¶Ô»°¿ò
@@ -24,12 +25,12 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 public:
-    ATL::CPath m_CPConfigFilePath;
-
+    
+/*
     #define u8 UINT8
     #define u16 UINT16
     #define u32 UINT32
-    #define FIL CStdioFile
+    #define FIL CStdioFile*/
 
     static const u32 NULL_NUM = 0xFFFFFFFFUL;
     enum {
@@ -44,7 +45,6 @@ public:
         u32 reserved;
     } ROLLNUM_RFSynccode_TABLE_t;
 
-    u32 m_RadixOfNextRollnumInCfgFile;
 
     typedef struct 
     {
@@ -64,6 +64,7 @@ public:
         ROLLNUM_RFSynccode_TABLE_t rsTable;
         u32 nextSFAddrForRollnum;
         bool SDRollnumUpdated;
+        u32 RadixOfNextRollnumInCfgFile;
     } TEST_OTPWRITE_t;
     TEST_OTPWRITE_t m_vTest_OTPWrite;
 
@@ -83,6 +84,12 @@ public:
         bool NextRollnum;
         bool PreviousUpdatedRollnum;
 
+        bool CP_Config_File1_Hash;
+        bool CP_Config_File2_Hash;
+        bool Program_File_Hash;
+        bool RFSynccode4B_Hash;
+        bool RFSynccode3B_Hash;
+
     } CONFIG_FILE_CHECK_t;
     CONFIG_FILE_CHECK_t m_ConfigFileCheck;
 
@@ -90,12 +97,18 @@ public:
     static const TCHAR s_strConfigFilePath2[];
     static const TCHAR s_strConfigFileName1[];
     static const TCHAR s_strConfigFileName2[];*/
+    ATL::CPath m_CPConfigFilePath;
     static const ATL::CPath s_strConfigFilePath1;
     static const ATL::CPath s_strConfigFilePath2;
+    static const ATL::CPath s_strHashFilePath;
     static const ATL::CPath s_strConfigFileName1;
     static const ATL::CPath s_strConfigFileName2;
     static const TCHAR s_strLinePrefix[][50];
     TCHAR s_strLineValue[CFG_PARAM_NUM][50];
+
+    static const int s_RF_Freq[8][3];
+
+
 
 public:
     afx_msg void OnBnClickedButton_SelectConfigFilePath();
@@ -110,6 +123,11 @@ public:
     CEdit m_ctrlFirmwareFileToWrite;
     afx_msg void OnBnClickedButton3();
     void ConfigFile_Parser(void);
+
+    void Convert_Parameters(TEST_OTPWRITE_t &cfg);
+
+    bool CheckParameters(TEST_OTPWRITE_t &cfg, CONFIG_FILE_CHECK_t &check);
+
     void ConfigFile_LineParser(CString& s, CStdioFile& f);
     CEdit m_ctrlRFSynccode4BFile;
     CEdit m_ctrlRFSynccode3BFile;
@@ -127,10 +145,36 @@ public:
     bool IsRollnumValid(void);
     bool IsRFSyncodeValid(void);
     bool WriteRollnumToConfigFile(void);
-    afx_msg void OnBnClickedButton_GenerateVerificationFiles();
-    CButton m_ctrl_EnMD5Gen_CP_Config_File1;
-    CButton m_ctrl_EnMD5Gen_CP_Config_File2;
-    CButton m_ctrl_EnMD5Gen_FirmwareToWrite;
-    CButton m_ctrl_EnMD5Gen_RFSynFile4B;
-    CButton m_ctrl_EnMD5Gen_RFSynFile3B;
+    afx_msg void OnBnClickedButton_GenerateHashFiles();
+    afx_msg void OnBnClickedButton_VerifyHashFiles();
+    CButton m_chk_En_CP_Config_File1_Hash;
+    CButton m_chk_En_CP_Config_File2_Hash;
+    CButton m_chk_En_FirmwareToWrite_Hash;
+    CButton m_chk_En_RFSynFile4B_Hash;
+    CButton m_chk_En_RFSynFile3B_Hash;
+    
+    CButton m_chk_VerifyHash;
+    CButton m_chk_GenerateHash;
+    afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+    
+    //CBrush m_brush;
+
+#define hgzColor_Red        (RGB(255,0,0))
+#define hgzColor_Green      (RGB(0,255,0))
+#define hgzColor_Blue       (RGB(0,0,255))
+#define hgzColor_DarkGreen  (RGB(0,153,0))
+#define hgzColor_Yellow     (RGB(255,255,0))
+#define hgzColor_DarkYellow (RGB(255,153,0))
+    COLORREF m_color_config1;
+    COLORREF m_color_config2;
+
+    CComboBox m_ctrl_RFFreqGroup;
+    CComboBox m_cmb_Enable_OTP_writing;
+    afx_msg void OnCbnSelchangeCombo2();
+    afx_msg void OnCbnSelchangeCombo1();
+
+    int Get_RF_Freq_Group(const int f1, const int f2, const int f3);
+
+    void UpdateData_To_Ctrol();
+    void UpdateData_To_Value();
 };

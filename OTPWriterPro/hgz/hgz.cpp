@@ -519,3 +519,22 @@ CString hgzGetFileTitle(const CString &filePath)
         return fn.Left(n);
     }
 }
+
+extern void hgzMessageBox( const TCHAR *szFormat, ... )
+{
+    va_list arglist;
+    va_start(arglist, szFormat);
+    TCHAR *buf = new TCHAR[_vsctprintf(szFormat, arglist)+1];
+    //TCHAR *buf = (TCHAR *)_alloca((_vsctprintf(szFormat, arglist)+1)*sizeof(TCHAR)); // 动态分配栈内存，无需手动释放。
+    _vstprintf(buf, szFormat, arglist);
+
+    AfxMessageBox(buf);
+
+    delete [] buf;
+}
+
+extern bool file_exist( const TCHAR *filename )
+{
+    return (_taccess(filename, 0) == 0);
+}
+

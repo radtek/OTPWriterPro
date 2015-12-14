@@ -1,6 +1,7 @@
 #pragma once
 
 //#include "stdafx.h"
+#include "afxwin.h"
 #include <string>
 
 using namespace std;
@@ -22,7 +23,16 @@ using namespace std;
 #endif
 /////////////////////////////
 
+#define u8 UINT8
+#define u16 UINT16
+#define u32 UINT32
+#define FIL CStdioFile
 
+#ifdef DEBUG
+#define DEBUG_PRINT true
+#else
+#define DEBUG_PRINT false
+#endif
 
 extern BOOL hgzExtractSubString(	// 成功返回 TRUE
 	CString& rString,				// 本序号（iSubString）提取到的子字符串
@@ -87,3 +97,6 @@ extern bool hgzIsBigEndian(void);
 extern CString hgzGetFolderPath(const CString &filePath);
 extern CString hgzGetFileName(const CString &filePath);
 extern CString hgzGetFileTitle(const CString &filePath);
+
+extern void hgzMessageBox(const TCHAR *szFormat, ...);
+extern bool file_exist(const TCHAR *filename);

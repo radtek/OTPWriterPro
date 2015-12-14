@@ -81,9 +81,7 @@ void COTPWriterProDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_LIST1, m_ctrlListBuffer);
     DDX_Control(pDX, IDC_COMBO6, m_cbDataToFill);
     DDX_Control(pDX, IDC_CHECK4, m_chkFillBufferAll);
-    DDX_Control(pDX, IDC_CHECK5, m_chkClearBufferAll);
     DDX_Control(pDX, IDC_CHECK_LENGTH_HEX, m_chkDataLen);
-    DDX_Control(pDX, IDC_BUTTON22, m_bnFind);
     DDX_Control(pDX, IDC_COMBO8, m_ctrlIgnoreMemBegin);
     DDX_Control(pDX, IDC_COMBO9, m_ctrlIgnoreMemEnd);
     DDX_Control(pDX, IDC_CHECK3, m_ctrlIgnoreMem);
@@ -92,6 +90,8 @@ void COTPWriterProDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_BUTTON1, m_ctrlAuto);
     DDX_Control(pDX, IDC_COMBO7, m_ctrlBufferSearch);
     DDX_Control(pDX, IDC_SPLIT1, m_ctrlRollnum);
+    DDX_Control(pDX, IDC_SPLIT2, m_sbn_Find);
+    DDX_Control(pDX, IDC_SPLIT3, m_sbn_Fill);
 }
 
 BEGIN_MESSAGE_MAP(COTPWriterProDlg, CDialogEx)
@@ -114,9 +114,9 @@ BEGIN_MESSAGE_MAP(COTPWriterProDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON13, &COTPWriterProDlg::OnBnClickedButtonTestDec)
 	ON_BN_CLICKED(IDC_BUTTON14, &COTPWriterProDlg::OnBnClickedButtonTestWR)
 	ON_BN_CLICKED(IDC_BUTTON15, &COTPWriterProDlg::OnBnClickedButtonOtpSpiReset)
-	ON_BN_CLICKED(IDC_BUTTON18, &COTPWriterProDlg::OnBnClickedButtonFillInBuffer)
+//	ON_BN_CLICKED(IDC_BUTTON18, &COTPWriterProDlg::OnBnClickedButtonFillInBuffer1)
     ON_BN_CLICKED(IDC_BUTTON19, &COTPWriterProDlg::OnBnClickedButtonOption)
-    ON_BN_CLICKED(IDC_BUTTON20, &COTPWriterProDlg::OnBnClickedButtonClearBuffer)
+//    ON_BN_CLICKED(IDC_BUTTON20, &COTPWriterProDlg::OnBnClickedButtonClearBuffer1)
     ON_CBN_SELCHANGE(IDC_COMBO1, &COTPWriterProDlg::OnCbnSelchangeComboSelectChipType)
     ON_BN_CLICKED(IDC_BUTTON3, &COTPWriterProDlg::OnBnClickedButtonDetectChipType)
     ON_BN_CLICKED(IDC_BUTTON21, &COTPWriterProDlg::OnBnClickedButtonVersionNum)
@@ -124,13 +124,22 @@ BEGIN_MESSAGE_MAP(COTPWriterProDlg, CDialogEx)
     ON_BN_CLICKED(IDC_BUTTON1, &COTPWriterProDlg::OnBnClickedButtonAuto)
     ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN1, &COTPWriterProDlg::OnDeltaposSpin1)
     ON_BN_CLICKED(IDC_BUTTON2, &COTPWriterProDlg::OnBnClickedButtonBufferDataProfile)
-    ON_BN_CLICKED(IDC_BUTTON22, &COTPWriterProDlg::OnBnClickedButtonBufferSearch)
     ON_BN_CLICKED(IDC_BUTTON23, &COTPWriterProDlg::OnBnClickedButton23)
     ON_COMMAND(ID_32772, &COTPWriterProDlg::OnRollnumAndCPConfig)
     ON_COMMAND(ID_32771, &COTPWriterProDlg::OnRollnumEnable)
     ON_UPDATE_COMMAND_UI(ID_32771, &COTPWriterProDlg::OnUpdateRollnumEnable)
     ON_WM_INITMENUPOPUP()
     ON_BN_CLICKED(IDC_SPLIT1, &COTPWriterProDlg::OnBnClicked_RollnumEnable)
+    ON_BN_CLICKED(IDC_SPLIT2, &COTPWriterProDlg::OnBnClickedButtonBufferSearch)
+    ON_COMMAND(ID_32774, &COTPWriterProDlg::OnMenu_ClearBufferFind)
+    ON_CBN_SELCHANGE(IDC_COMBO7, &COTPWriterProDlg::OnCbnSelchangeCombo7)
+//    ON_CBN_CLOSEUP(IDC_COMBO7, &COTPWriterProDlg::OnCbnCloseupCombo7)
+//    ON_CBN_EDITCHANGE(IDC_COMBO7, &COTPWriterProDlg::OnCbnEditchangeCombo7)
+//ON_CBN_EDITUPDATE(IDC_COMBO7, &COTPWriterProDlg::OnCbnEditupdateCombo7)
+ON_WM_TIMER()
+ON_BN_CLICKED(IDC_SPLIT3, &COTPWriterProDlg::OnBnClickedButtonFillInBuffer)
+ON_COMMAND(ID_32776, &COTPWriterProDlg::OnBnClickedButtonClearBuffer)
+ON_CBN_SELCHANGE(IDC_COMBO6, &COTPWriterProDlg::OnCbnSelchangeCombo6)
 END_MESSAGE_MAP()
 
 
@@ -178,10 +187,11 @@ BOOL COTPWriterProDlg::OnInitDialog()
     g_pctrlProgress = &m_ctrlProgress;
 
 	
-	m_ctrlListBuffer.SetExtendedStyle( LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES );
 	
-	// set columns
-	CString s;
+	m_ctrlListBuffer.SetExtendedStyle( LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES );
+    
+    // set columns
+    CString s;
 	m_ctrlListBuffer.InsertColumn(0, _T(""), 0, 76);
 	for (int i = 0; i < 16; i++)
 	{
@@ -192,11 +202,12 @@ BOOL COTPWriterProDlg::OnInitDialog()
 	m_ctrlListBuffer.GetHeaderCtrl()->EnableWindow(FALSE);
 
 	// set rows (items)
-	m_ctrlListBuffer.SetItemCount(16384/16);
-	for (unsigned int i = 0; i < 16384/16; i++) {
+	m_ctrlListBuffer.SetItemCount(16*1024/16);
+	for (unsigned int i = 0; i < 16*1024/16; i++) {
 		s.Format(_T("%04X %04X"), (unsigned __int16)(i>>12), (unsigned __int16)(i<<4));
 		m_ctrlListBuffer.InsertItem(i, s);
 	}
+    
 
 
     // Option
@@ -210,7 +221,7 @@ BOOL COTPWriterProDlg::OnInitDialog()
     
 	// Start a periodic read IRP to timely receive datas from device.
 	//SetTimer(1, 1, NULL);
-    m_bnFind.EnableWindow(FALSE);
+    //m_bnFind.EnableWindow(FALSE);
     //m_bnTEST1.EnableWindow(FALSE);
     //m_bnTEST2.EnableWindow(FALSE);
     //m_ctrlWrite.EnableWindow(FALSE);
@@ -231,6 +242,11 @@ BOOL COTPWriterProDlg::OnInitDialog()
         m_RollnumAndCPConfigDialog.m_CPConfigFilePath += s;
     else
         m_RollnumAndCPConfigDialog.m_CPConfigFilePath = s.GetString();
+
+    
+    m_sbn_Find.SetDropDownMenu(IDR_MENU1, 3);
+    m_ctrlBufferSearch.SetCueBanner(_T("例如：02 E8"));
+    m_sbn_Fill.SetDropDownMenu(IDR_MENU1, 4);
 
     m_ctrlRollnum.SetDropDownMenu(IDR_MENU1, 2);
     m_bRollnumEnable = AfxGetApp()->GetProfileInt(_T("Settings"), _T("EnableRollnum"), 0); // 
@@ -1098,32 +1114,6 @@ void COTPWriterProDlg::OnBnClickedButtonOtpSpiReset()
 }
 
 
-void COTPWriterProDlg::OnBnClickedButtonFillInBuffer()
-{
-	UINT8 data = GetDataToFillBuffer();
-    UINT addr;
-    UINT dataLen;
-
-    if (m_chkFillBufferAll.GetCheck())
-    {
-        addr = 0;
-        dataLen = g_mem.SizeUsed();
-    }
-    else
-    {
-        addr = GetStartAddress();
-        dataLen = GetDataLength();
-    }
-
-    g_mem.FillBuf(addr, data, dataLen);
-    UpdateBufferDisplay(addr, dataLen);
-
-    if (m_Option.m_bWriteBufSizeReallyUsed)
-        m_ctrlDataLength.SetWindowsTextFormat(m_chkDataLen.GetCheck() ? _T("%X") : _T("%d"), g_mem.SizeUsed());
-
-}
-
-
 void COTPWriterProDlg::UpdateBufferDisplay( unsigned int addr, unsigned int length )
 {
     CString s;
@@ -1161,32 +1151,6 @@ void COTPWriterProDlg::OnBnClickedButtonOption()
             m_ctrlDataLength.EnableWindow(TRUE);
         }
     }
-}
-
-
-
-void COTPWriterProDlg::OnBnClickedButtonClearBuffer()
-{
-    UINT32 addr;
-    UINT64 dataLen;
-
-    if (m_chkClearBufferAll.GetCheck())
-    {
-        addr = 0;
-        dataLen = g_mem.SizeUsed();
-    }
-    else
-    {
-        addr = GetStartAddress();
-        dataLen = GetDataLength();
-    }
-
-    g_mem.ClearBuf(addr, dataLen);
-    UpdateBufferDisplay(addr, dataLen);
-
-    if (m_Option.m_bWriteBufSizeReallyUsed)
-        m_ctrlDataLength.SetWindowsTextFormat(m_chkDataLen.GetCheck() ? _T("%X") : _T("%d"), g_mem.SizeUsed());
-
 }
 
 UINT8 COTPWriterProDlg::GetDataToFillBuffer()
@@ -1529,27 +1493,6 @@ void COTPWriterProDlg::OnBnClickedButtonBufferDataProfile()
 
 }
 
-
-void COTPWriterProDlg::OnBnClickedButtonBufferSearch()
-{
-    CHgzString s;
-    m_ctrlBufferSearch.GetWindowText(s);
-    UINT8 x[1024];
-    u32 numByte = m_ctrlBufferSearch.GetWindowHexArray(x);
-
-    // start searching buffer
-    UINT8 y = 0;
-
-    for (u32 i = 0; i < g_mem.SizeUsed(); i++)
-    {
-        g_mem.ReadBuf(i, &y, 1);
-        if (y == x[0])
-            ; // temporary not to implement
-    }
-    
-}
-
-
 void COTPWriterProDlg::OnBnClickedButton23()
 {
     CDlgTools dlg;
@@ -1652,4 +1595,160 @@ void COTPWriterProDlg::ProcessRollnum()
 void COTPWriterProDlg::OnBnClicked_RollnumEnable()
 {
     OnRollnumEnable();
+}
+
+void COTPWriterProDlg::OnBnClickedButtonBufferSearch()
+{
+    static int pos = -1;
+    static CString oldstr(_T(""));
+
+    if (m_ctrlBufferSearch.GetCurSel() == 0)
+    {
+        pos = -1;
+        oldstr.Empty();
+        return OnMenu_ClearBufferFind();
+    }
+    CHgzString newstr;
+    m_ctrlBufferSearch.GetWindowText(newstr);
+
+    // check if string is right
+    if (newstr.GetLength() == 0)
+        return;
+    if (!newstr.is_xdigit_or_space())
+    {
+        hgzMessageBox(_T("请输入十六进制数，以空格分隔。"));
+        return;
+    }
+    
+    m_ctrlBufferSearch.AddStringWithoutDuplication(newstr);
+    if (newstr.Compare(oldstr) != 0)
+    {
+        pos = -1;
+        oldstr = newstr;
+        m_ctrlListBuffer.ClearSubItemColor();
+    }
+
+    UINT8 x[1024];
+    u32 numByte = m_ctrlBufferSearch.GetWindowHexArray(x);
+
+    // start searching buffer
+    pos++;
+    int addr = -1;
+    for (int i = pos; i < g_mem.SizeUsed(); i++)
+    {
+        addr = i;
+        for (int j = 0; j < numByte; j++) {
+            UINT8 y = 0;
+            g_mem.ReadBuf(i+j, &y, 1);
+            if (y != x[j])
+            {
+                addr = -1;
+                break;
+            }
+        }
+        if (addr == i)
+            break;
+    }
+
+    pos = addr;
+
+    PrintCurrentTime();
+    if (addr != -1) {
+        EditCtrlOutput(0, _T("Data found at: %04X.\r\n"), addr);
+        m_ctrlListBuffer.EnsureVisible(addr/16, FALSE);
+        //m_ctrlListBuffer.SetTopIndex(addr/16);
+        m_ctrlListBuffer.SetSubItemColor(addr, addr+numByte-1, RGB(255,0,0), RGB(255,153,0), true);
+
+    }
+    else
+        EditCtrlOutput(0, _T("Not found.\r\n"));
+}
+
+
+void COTPWriterProDlg::OnMenu_ClearBufferFind()
+{
+    m_ctrlBufferSearch.SetWindowText(_T(""));
+    m_ctrlListBuffer.ClearSubItemColor();
+}
+
+
+void COTPWriterProDlg::OnCbnSelchangeCombo7()
+{
+    SetTimer(1, 10, NULL);
+}
+
+void COTPWriterProDlg::OnTimer(UINT_PTR nIDEvent)
+{
+    // TODO: 在此添加消息处理程序代码和/或调用默认值
+    switch (nIDEvent)
+    {
+    case 1:
+        KillTimer(1);
+        OnBnClickedButtonBufferSearch();
+        break;
+
+    case 2:
+        KillTimer(2);
+        OnBnClickedButtonFillInBuffer();
+        break;
+    }
+
+    CDialogEx::OnTimer(nIDEvent);
+}
+
+
+void COTPWriterProDlg::OnBnClickedButtonFillInBuffer()
+{
+    UINT8 data = GetDataToFillBuffer();
+    UINT addr;
+    UINT dataLen;
+
+    if (m_chkFillBufferAll.GetCheck())
+    {
+        addr = 0;
+        dataLen = g_mem.SizeUsed();
+    }
+    else
+    {
+        addr = GetStartAddress();
+        dataLen = GetDataLength();
+    }
+
+    g_mem.FillBuf(addr, data, dataLen);
+    UpdateBufferDisplay(addr, dataLen);
+
+    if (m_Option.m_bWriteBufSizeReallyUsed)
+        m_ctrlDataLength.SetWindowsTextFormat(m_chkDataLen.GetCheck() ? _T("%X") : _T("%d"), g_mem.SizeUsed());
+
+}
+
+void COTPWriterProDlg::OnBnClickedButtonClearBuffer()
+{
+    UINT32 addr;
+    UINT64 dataLen;
+
+    if (m_chkFillBufferAll.GetCheck())
+    {
+        addr = 0;
+        dataLen = g_mem.SizeUsed();
+    }
+    else
+    {
+        addr = GetStartAddress();
+        dataLen = GetDataLength();
+    }
+
+    g_mem.ClearBuf(addr, dataLen);
+    UpdateBufferDisplay(addr, dataLen);
+
+    if (m_Option.m_bWriteBufSizeReallyUsed)
+        m_ctrlDataLength.SetWindowsTextFormat(m_chkDataLen.GetCheck() ? _T("%X") : _T("%d"), g_mem.SizeUsed());
+
+}
+
+
+
+void COTPWriterProDlg::OnCbnSelchangeCombo6()
+{
+    SetTimer(2, 10, NULL);
 }

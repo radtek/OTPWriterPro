@@ -96,7 +96,6 @@ public:
     CHgzListCtrl m_ctrlListBuffer;
     CHgzComboBox m_cbDataToFill;
     CButton m_chkFillBufferAll;
-    CButton m_chkClearBufferAll;
     CButton m_chkDataLen;
 
     HS_CHIP_TYPE_t m_ChipType;
@@ -121,9 +120,9 @@ public:
 	afx_msg void OnBnClickedButtonTestDec();
 	afx_msg void OnBnClickedButtonTestWR();
 	afx_msg void OnBnClickedButtonOtpSpiReset();
-	afx_msg void OnBnClickedButtonFillInBuffer();
+//	afx_msg void OnBnClickedButtonFillInBuffer1();
     afx_msg void OnBnClickedButtonOption();
-    afx_msg void OnBnClickedButtonClearBuffer();
+//    afx_msg void OnBnClickedButtonClearBuffer1();
     afx_msg void OnCbnSelchangeComboSelectChipType();
     afx_msg void OnBnClickedButtonDetectChipType();
     afx_msg void OnBnClickedButtonVersionNum();
@@ -150,9 +149,6 @@ public:
     void Cmd1Data0( CHgzMem::pMemFunc_Cmd1Data0 CmdFunc, CString s );
 
 
-    //CButton m_bnTEST1;
-    //CButton m_bnTEST2;
-    CButton m_bnFind;
     CHgzComboBox m_ctrlIgnoreMemBegin;
     CHgzComboBox m_ctrlIgnoreMemEnd;
     CButton m_ctrlIgnoreMem;
@@ -170,7 +166,6 @@ public:
     virtual void OnOK();
     virtual void OnCancel();
     afx_msg void OnBnClickedButtonBufferDataProfile();
-    afx_msg void OnBnClickedButtonBufferSearch();
     CHgzComboBox m_ctrlBufferSearch;
     afx_msg void OnBnClickedButton23();
     CSplitButton m_ctrlRollnum;
@@ -184,6 +179,20 @@ public:
     BOOL m_bRollnumEnable;
     afx_msg void OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);
     afx_msg void OnBnClicked_RollnumEnable();
+    afx_msg void OnBnClickedButtonBufferSearch();
+    CSplitButton m_sbn_Find;
+    afx_msg void OnMenu_ClearBufferFind();
+    afx_msg void OnCbnSelchangeCombo7();
+//    afx_msg void OnCbnCloseupCombo7();
+//    afx_msg void OnCbnEditchangeCombo7();
+
+    bool m_bCmbFindSelectChanged;
+//    afx_msg void OnCbnEditupdateCombo7();
+    afx_msg void OnTimer(UINT_PTR nIDEvent);
+    afx_msg void OnBnClickedButtonFillInBuffer();
+    CSplitButton m_sbn_Fill;
+    afx_msg void OnBnClickedButtonClearBuffer();
+    afx_msg void OnCbnSelchangeCombo6();
 };
 
 

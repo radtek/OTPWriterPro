@@ -40,6 +40,33 @@ public:
 		return *this;
 	}*/
 
+public:
+    bool is_xdigit() {
+        if (GetLength() == 0)
+            return false;
+
+        for(int i = 0; i < GetLength();i++)
+        {
+            if (!_istxdigit(GetString()[i]))
+                return false;
+        }
+
+        return true;
+    }
+
+    bool is_xdigit_or_space() {
+        if (GetLength() == 0)
+            return false;
+
+        for(int i = 0; i < GetLength();i++)
+        {
+            if (!_istxdigit(GetString()[i]) && !_istspace(GetString()[i]))
+                return false;
+        }
+
+        return true;
+    }
+
 
 public:
 	long stol( size_t *_Idx = 0, int _Base = 10, bool _ExceptionNotice = 1 )

@@ -303,6 +303,7 @@ void CHgzListCtrl::OnNMCustomdraw(NMHDR *pNMHDR, LRESULT *pResult)
 	NMLVCUSTOMDRAW* pLVCD = reinterpret_cast<NMLVCUSTOMDRAW*>( pNMHDR );
 	*pResult = CDRF_DODEFAULT;
 
+    
 	if ( CDDS_PREPAINT == pLVCD->nmcd.dwDrawStage )
 	{
 		*pResult = CDRF_NOTIFYITEMDRAW;
@@ -314,6 +315,8 @@ void CHgzListCtrl::OnNMCustomdraw(NMHDR *pNMHDR, LRESULT *pResult)
 	else if ( (CDDS_ITEMPREPAINT | CDDS_SUBITEM) == pLVCD->nmcd.dwDrawStage )
 	{
 		int nItem = static_cast<int>( pLVCD->nmcd.dwItemSpec );
+        int iSubItem = pLVCD->iSubItem;
+        UINT cusdata = GetItemData(nItem);
 		
 		if (m_nItem == nItem) {
 			if (IsItemSelected(nItem)) {
@@ -329,6 +332,13 @@ void CHgzListCtrl::OnNMCustomdraw(NMHDR *pNMHDR, LRESULT *pResult)
 		{
 			pLVCD->clrText = RGB(255, 255, 255);        //Set the text to white
 			pLVCD->clrTextBk = RGB(51, 153, 255);        //Set the background color to blue
+
+			//*pResult = CDRF_NOTIFYPOSTPAINT;
+		}
+		else if (cusdata & (1<<iSubItem)) // 如果当前要刷新的项为要突出显示的项，则将文字设为白色，背景色设为蓝色
+		{
+			pLVCD->clrText = m_CustomColorText;        //Set the text to white
+			pLVCD->clrTextBk = m_CustomColorTextBk;        //Set the background color to blue
 
 			//*pResult = CDRF_NOTIFYPOSTPAINT;
 		}
@@ -391,6 +401,54 @@ CHgzListCtrl * CHgzListCtrl::NewHgzListCtrlRegs( CWnd * pParentWnd, int nID, CRe
 	}
 
 	return pListCtrlRegs;
+}
+
+int CHgzListCtrl::SetTopIndex(int nLineIndex)
+{
+    int old = GetTopIndex();
+    CRect rect;
+    GetItemRect(1, &rect, LVIR_BOUNDS);
+
+    CSize sz;
+    sz.cx = 0;
+    sz.cy = (nLineIndex - old) * rect.Height();
+
+    Scroll(sz);
+
+    return old;
+}
+
+void CHgzListCtrl::SetSubItemColor( int nSubItemBegin, int nSubItemEnd, COLORREF clrText, COLORREF clrTextBk, BOOL bEnable /*= TRUE */)
+{
+    m_CustomColorText = clrText;
+    m_CustomColorTextBk = clrTextBk;
+
+    int cols = GetColumnCount();
+    
+    int n = nSubItemBegin;
+    for (int item = nSubItemBegin/cols; item <= nSubItemEnd/cols; item++)
+    {
+        UINT32 colored = GetItemData(item);
+        for (int i = n%cols+1; (i <= cols) && (n<=nSubItemEnd); ) {
+            colored |= (1<<i);
+            n++;
+            i++;
+        }
+        SetItemData(item, colored);
+    }
+    
+}
+
+int CHgzListCtrl::GetColumnCount()
+{
+    return GetHeaderCtrl()->GetItemCount()-1;
+}
+
+void CHgzListCtrl::ClearSubItemColor()
+{
+    for (int i = 0; i < GetItemCount(); i++)
+        SetItemData(i, 0);
+    RedrawWindow();
 }
 
 

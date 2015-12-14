@@ -1,4 +1,5 @@
 #pragma once
+//#include "afxwin.h"
 #include "atltypes.h"
 
 
@@ -57,9 +58,13 @@ public:
 	int m_nItem;
 	int m_nSubItem;
 
+    COLORREF m_CustomColorText;
+    COLORREF m_CustomColorTextBk;
+
 	UINT m_nFlags;
 	CPoint m_point;
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+    int SetTopIndex(int nLineIndex); 
 
 	afx_msg void HoldOnEditing();
 
@@ -76,6 +81,9 @@ public:
 	CHgzListCtrl * NewHgzListCtrlRegs( CWnd * pParentWnd, int nID, CRect &rect, int nRow = 16, int nCol = 2, unsigned int nExStyle = LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_CHECKBOXES );
 	afx_msg void OnKillFocus(CWnd* pNewWnd);
 //	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+    void SetSubItemColor(int nSubItemBegin, int nSubItemEnd, COLORREF clrText, COLORREF clrTextBk, BOOL bEnable = TRUE);
+    void ClearSubItemColor();
+    int GetColumnCount();
 };
 
 

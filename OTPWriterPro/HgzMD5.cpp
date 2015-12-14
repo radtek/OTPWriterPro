@@ -15,9 +15,9 @@ CHgzMD5::~CHgzMD5(void)
 }
 
 // md5_buffer
-CString CHgzMD5::md5buf( UINT8 * buf, UINT32 byteLen, TCHAR *sDigest /*= NULL*/ )
+CString CHgzMD5::md5buf( const UINT8 * buf, UINT32 byteLen, TCHAR *sDigest /*= NULL*/ )
 {
-    UINT8 *begin = buf;
+    UINT8 *begin = (u8*)buf;
     UINT8 *end = begin + byteLen;
 
     md5init();
@@ -36,7 +36,7 @@ CString CHgzMD5::md5buf( UINT8 * buf, UINT32 byteLen, TCHAR *sDigest /*= NULL*/ 
 }
 
 // md5_string
-CString CHgzMD5::md5str( TCHAR *s, TCHAR *sDigest /*= NULL*/, bool bUnicode /*= false*/ )
+CString CHgzMD5::md5str( const TCHAR *s, TCHAR *sDigest /*= NULL*/, bool bUnicode /*= false*/ )
 {
     CString su;
     
@@ -115,13 +115,13 @@ CString CHgzMD5::md5binseg( CStdioFile &fin, int bytes /*= 0*/, CStatic *progres
             break;
         }
 
-        if ((++i%10 == 0) && prog < fin.GetPosition()*100/fin.GetLength())
+        i++;
+        if (progress && (i%10 == 0) && prog < fin.GetPosition()*100/fin.GetLength())
         {
             prog = fin.GetPosition()*100/fin.GetLength();
             CString sProg;
             sProg.Format(_T("%d%%, %ds"), prog, timer.GetSpan());
-            if (progress)
-                progress->SetWindowText(sProg);
+            progress->SetWindowText(sProg);
         }
     }
 
@@ -138,32 +138,73 @@ CString CHgzMD5::md5binseg( CStdioFile &fin, int bytes /*= 0*/, CStatic *progres
 
 }
 
-CString CHgzMD5::md5bin( CStdioFile &fin, CStatic *progress )
+int CHgzMD5::md5bin( CStdioFile &fin, CStdioFile *fout, int perBytes /*= 0*/, CStatic *progress /*= NULL*/, bool bVerify /*= false*/ )
 {
-    return md5binseg(fin, 0, progress);
-}
-
-CString CHgzMD5::md5bin( CStdioFile &fin, CStdioFile *fout, int perBytes /*= 0*/, CStatic *progress /*= NULL*/ )
-{
-    if (!fout)
-        return md5binseg(fin, 0, progress)+_T("\n");
-
     fin.SeekToBegin();
-    fout->SeekToEnd();
+    if (bVerify)
+        fout->SeekToBegin();
+    else
+        fout->SeekToEnd();
 
+    bool bPass = true;
+
+    if (!perBytes && progress)
+        progress->SetWindowText(_T("0%"));
+
+    UINT32 cnt = 0;
+    CHgzTimer timer;
+    int prog = 0;
     int i = 0;
+
     while(fin.GetPosition() != fin.GetLength())
     {
+        if (bVerify)
+        {
+            CString s1, smd5;
+            smd5 = md5binseg(fin, perBytes, perBytes ? NULL : progress);
+            if (!fout->ReadString(s1) || smd5.CompareNoCase(s1) != 0)
+            {
+                bPass = false;
+                hgzMessageBox(_T("Hash verification fails: \n\n %s\n\n line \t= %d\n data_pos \t= %d\n md5_computed \t= %s\n md5_reference \t= %s\n"), fin.GetFilePath(), i+1, i*256, smd5, s1);
+                i = 0;
+                break;
+            }
+        }
+        else
+            fout->WriteString(md5binseg(fin, perBytes, perBytes ? NULL : progress)+_T("\n"));
+
         i++;
-        fout->WriteString(md5binseg(fin, perBytes, progress)+_T("\n"));
+        if (!perBytes && progress && (i%10 == 0) && prog < fin.GetPosition()*100/fin.GetLength())
+        {
+            prog = fin.GetPosition()*100/fin.GetLength();
+            CString sProg;
+            sProg.Format(_T("%d%%, %ds"), prog, timer.GetSpan());
+            progress->SetWindowText(sProg);
+        }
+
     }
 
-    CString si;
-    si.Format(_T("%d"), i);
-    return si;
+    if (progress && (fin.GetPosition()==fin.GetLength()))
+    {
+        CString sProg;
+        if (bVerify)
+        {
+            if (bPass && fout->GetPosition()!= fout->GetLength())
+            {
+                bPass = false;
+                hgzMessageBox(_T("Hash verification fails: There are more MD5s than required (%d) in MD5 file: \r\n\r\n%s"), i, fout->GetFilePath());
+            }
+            sProg.Format(_T("%s, %ds"), bPass ? _T("¡Ì") : _T("X"), timer.GetSpan());
+        }
+        else 
+            sProg.Format(_T("100%%, %ds"), timer.GetSpan());
+        progress->SetWindowText(sProg);
+    }
+
+    return i;
 }
 
-CString CHgzMD5::md5bin( CString &fin, CString *fout /*= NULL*/, int perBytes /*= 0*/, CStatic *progress /*= NULL*/ )
+int CHgzMD5::md5bin( CString &fin, CString *fout /*= NULL*/, int perBytes /*= 0*/, CStatic *progress /*= NULL*/, bool bVerify /*= false*/ )
 {
     CHgzPath inf(fin), outf;
     if (fout)
@@ -173,29 +214,56 @@ CString CHgzMD5::md5bin( CString &fin, CString *fout /*= NULL*/, int perBytes /*
         outf = inf;
         outf.ChangeFileExt(_T(".md5"));
     }
-    outf.CreateDirectory();
+    if (!bVerify)
+        outf.CreateDirectory();
 
     CStdioFile mFile, mFileMD5;
     //CFileException mExcept;
 
-    mFile.Open(fin, CFile::modeRead | CFile::shareDenyNone | CFile::typeBinary);
-    mFileMD5.Open(outf.GetFullPath(), CFile::modeCreate /*| CFile::modeNoTruncate*/ | CFile::modeReadWrite | CFile::shareDenyNone | CFile::typeText);
-    mFileMD5.SetLength(0);
-    CString cnt = md5bin(mFile, &mFileMD5, perBytes, progress);
+    if (!mFile.Open(fin, CFile::modeRead | CFile::shareDenyNone | CFile::typeBinary))
+    {
+        if (progress)
+            progress->SetWindowText(_T("X, 0s"));
+        hgzMessageBox(_T("File not found: \r\n\r\n%s"), fin);
+        return 0;
+    }
+
+    if (bVerify)
+    {    
+        if (!mFileMD5.Open(outf.GetFullPath(), CFile::modeRead | CFile::shareDenyNone | CFile::typeText))
+        {
+            if (progress)
+                progress->SetWindowText(_T("X, 0s"));
+            hgzMessageBox(_T("Hash verification fails: MD5 file not found: \r\n\r\n%s"), outf.GetFullPath());
+            mFile.Close();
+            return 0;
+        }
+    } 
+    else
+    {
+        mFileMD5.Open(outf.GetFullPath(), CFile::modeCreate /*| CFile::modeNoTruncate*/ | CFile::modeReadWrite | CFile::shareDenyNone | CFile::typeText);
+        mFileMD5.SetLength(0);
+    }
+    int cnt = md5bin(mFile, &mFileMD5, perBytes, progress, bVerify);
     mFile.Close();
     mFileMD5.Close();
 
     return cnt;
 }
 
-CString CHgzMD5::md5bin( CString & fin, CString * fout, CStatic * progress )
+CString CHgzMD5::md5bin( CStdioFile &fin, CStatic *progress )
+{
+    return md5binseg(fin, 0, progress);
+}
+
+int CHgzMD5::md5bin( CString & fin, CString * fout, CStatic * progress )
 {
     return md5bin(fin, fout, 0, progress);
 }
 
 
 // md5_txt_file
-int CHgzMD5::md5txt( CStdioFile &fin, CStdioFile &fout, bool bUnicode /*= false*/, CStatic *progress /*= NULL*/ )
+int CHgzMD5::md5txt( CStdioFile &fin, CStdioFile *fout, bool bUnicode /*= false*/, CStatic *progress /*= NULL*/, bool bVerify /*= false*/ )
 {
     // As to txt file, md5 each line of its Ascii string and store it line to line.
 
@@ -204,9 +272,13 @@ int CHgzMD5::md5txt( CStdioFile &fin, CStdioFile &fout, bool bUnicode /*= false*
 
     int cnt = 0;
     CString s;
+    bool bPass = true;
 
     fin.SeekToBegin();
-    fout.SeekToEnd();
+    if (bVerify)
+        fout->SeekToBegin();
+    else
+        fout->SeekToEnd();
 
     int prog = 0, prog1 = 0;
 
@@ -214,39 +286,59 @@ int CHgzMD5::md5txt( CStdioFile &fin, CStdioFile &fout, bool bUnicode /*= false*
     _time64(&time1);
     while (fin.ReadString(s))
     {
-        fout.WriteString(md5str(s)+_T("\n"));
+        if (bVerify)
+        {
+            CString s1, smd5;
+            smd5 = md5str(s);
+            if (!fout->ReadString(s1) || smd5.CompareNoCase(s1) != 0)
+            {
+                bPass = false;
+                hgzMessageBox(_T("Hash verification fails. \n\n %s\n\n line \t= %d\n string \t= %s\n md5_computed \t= %s\n md5_reference \t= %s\n"), fin.GetFilePath(), cnt+1, s, smd5, s1);
+                break;
+            }
+        }
+        else
+            fout->WriteString(md5str(s)+_T("\n"));
+        
         cnt++;
-
-        if ((cnt%1000 == 0) && prog < (prog1 = fin.GetPosition()*100/fin.GetLength()))
+        if (progress && (cnt%1000 == 0) && prog < (prog1 = fin.GetPosition()*100/fin.GetLength()))
         {
             prog = prog1;
             CString sProg;
-            //sProg.Format(_T("%s: %d%%"), fin.GetFileName(), prog);
             _time64(&time2);
             sProg.Format(_T("%d%%, %ds"), prog, time2-time1);
-            if (progress)
-                progress->SetWindowText(sProg);
+            progress->SetWindowText(sProg);
         }
     }
     if (progress)
     {
         CString sProg;
-        //progress->SetWindowText(fin.GetFileName() + _T(": 100%"));
-
         _time64(&time2);
-        //s.Format(_T("%s    Elapsed time is %d seconds."), fin.GetFileName() + _T(": 100%."), time2 - time1);
-        sProg.Format(_T("100%%, %ds"), time2 - time1);
+        if (bVerify)
+        {
+            if (bPass && fout->GetPosition()!= fout->GetLength())
+            {
+                bPass = false;
+                hgzMessageBox(_T("Verification fails: There are more MD5s than required (%d) in MD5 file: \r\n\r\n%s"), cnt, fout->GetFilePath());
+            }
+            sProg.Format(_T("%s, %ds"), bPass ? _T("¡Ì") : _T("X"), time2 - time1); // _T("¡Ì") : _T("X")
+        }
+        else
+            sProg.Format(_T("100%%, %ds"), time2 - time1);
         progress->SetWindowText(sProg);
     }
+
+    if (bVerify && !bPass)
+        return 0;
 
     return cnt;
 }
 
-int CHgzMD5::md5txt( CString &fin, CString *fout /*= NULL*/, bool bUnicode /*= false*/, CStatic *progress /*= NULL*/ )
+int CHgzMD5::md5txt( CString &fin, CString *fout /*= NULL*/, bool bUnicode /*= false*/, CStatic *progress /*= NULL*/, bool bVerify /*= false*/ )
 {
     int cnt = 0;
 
-    CHgzPath inf(fin), outf, tmppath;
+    CHgzPath inf(fin), outf;
     if (fout)
         outf = CHgzPath(fout);
     else
@@ -254,33 +346,172 @@ int CHgzMD5::md5txt( CString &fin, CString *fout /*= NULL*/, bool bUnicode /*= f
         outf = inf;
         outf.ChangeFileExt(_T(".md5"));
     }
-    outf.CreateDirectory();
+    if (!bVerify)
+        outf.CreateDirectory();
 
     CStdioFile mFile, mFileMD5;
     //CFileException mExcept;
 
-    mFile.Open(fin, CFile::modeRead | CFile::shareDenyNone | CFile::typeText);
-    mFileMD5.Open(outf.GetFullPath(), CFile::modeCreate /*| CFile::modeNoTruncate*/ | CFile::modeReadWrite | CFile::shareDenyNone | CFile::typeText);
-    mFileMD5.SetLength(0);
-    cnt = md5txt(mFile, mFileMD5, bUnicode, progress);
+    if (!mFile.Open(fin, CFile::modeRead | CFile::shareDenyNone | CFile::typeText))
+    {
+        if (progress)
+            progress->SetWindowText(_T("X, 0s"));
+        hgzMessageBox(_T("File not found: \r\n\r\n%s"), fin);
+        return 0;
+    }
+    if (bVerify)
+    {    
+        if (!mFileMD5.Open(outf.GetFullPath(), CFile::modeRead | CFile::shareDenyNone | CFile::typeText))
+        {
+            if (progress)
+                progress->SetWindowText(_T("X, 0s"));
+            hgzMessageBox(_T("Verification fails: MD5 file not found: \r\n\r\n%s"), outf.GetFullPath());
+            mFile.Close();
+            return 0;
+        }
+    } 
+    else
+    {
+        mFileMD5.Open(outf.GetFullPath(), CFile::modeCreate /*| CFile::modeNoTruncate*/ | CFile::modeReadWrite | CFile::shareDenyNone | CFile::typeText);
+        mFileMD5.SetLength(0);
+    }
+    cnt = md5txt(mFile, &mFileMD5, bUnicode, progress, bVerify);
     mFile.Close();
     mFileMD5.Close();
 
     return cnt;
 }
 
-// md5_all_file
-CString CHgzMD5::md5file( CString &fin, CString *fout /*= NULL*/, bool bTxtFile /*= false*/, int bUnicode_perBytes /*= 0*/, CStatic *progress /*= NULL*/ )
+
+
+//--------------------
+bool CHgzMD5::assert_equal(const char *val, bool isprint /*= false*/)
 {
-    if (!bTxtFile)
-        return md5bin(fin, fout, bUnicode_perBytes, progress);
-    else // As to txt file, md5 each line of its Ascii string and store it line to line.
-    {
-        CString sLineCount;
-        sLineCount.Format(_T("%d"), md5txt(fin, fout, bUnicode_perBytes, progress));
-        return sLineCount; // CString format of line count.
-    }
+    char cur_md5[33];
+    to_string(cur_md5);
+    bool res = stricmp(val, cur_md5) == 0;
+    if (isprint) 
+        res ? printf("md5 is the same.\r\n") : printf("md5 is different.\r\nCurrent: %s\r\nReference: %s\r\n", cur_md5, val);
+
+    return res;
 }
+
+bool CHgzMD5::assert_equal(string& val, bool isprint /*= false*/)
+{
+    return assert_equal(val.c_str(), isprint);
+}
+
+bool CHgzMD5::assert_equal(u8 *val, bool isprint /*= false*/)
+{
+    bool res = std::memcmp(val, (u8 *)digest, 16) == 0;
+    if (isprint) {
+        if (res)
+            printf("md5 is the same.\r\n");
+        else 
+        {
+            char cur_md5[33], val_md5[33];
+            to_string(cur_md5);
+            to_string(val, val_md5);
+            printf("md5 is different.\r\nCurrent: %s\r\nReference: %s\r\n", cur_md5, val_md5);
+        }
+    }
+    return res;
+}
+
+bool CHgzMD5::assert_equal(u32 *val, bool isprint /*= false*/)
+{
+    return assert_equal((u8*)val, isprint);
+}
+
+bool CHgzMD5::assert_equal(FIL *fp, int nLine, int chars_per_line, bool isprint /*= false*/)
+{
+    char s[40];
+    if (!file_get_md5(fp, nLine, chars_per_line, s))
+        return false;
+
+    return assert_equal(s, isprint);
+}
+
+char* CHgzMD5::file_get_md5(FIL *fp, int nLine, int chars_per_line, char *md5_str)
+{
+    if (nLine != 0)
+    {
+        if (chars_per_line == 0)
+            return NULL;
+
+        if (chars_per_line*(nLine+1) > fp->GetLength())
+            return NULL;
+
+        if (fp->Seek(chars_per_line * nLine, CFile::begin) != chars_per_line * nLine)
+            return NULL;
+    }
+    CString s;
+    if (!fp->ReadString(s))
+        return NULL;
+    strcpy(md5_str, (CStringA)s.GetString());
+
+    std::strtok(md5_str, "\r\n");
+    if (std::strlen(md5_str) != 32)
+        return NULL;
+
+    return md5_str;
+}
+
+bool CHgzMD5::IsCorrect(const char *str, FIL *fp, int nLine, int chars_per_line, bool isprint /*= false*/)
+{
+    CString s(str);
+    md5str(s);
+
+    if (isprint)
+        println();
+
+    return assert_equal(fp, nLine, chars_per_line, isprint);
+}
+
+bool CHgzMD5::IsCorrect(const u8 *buf, const int buf_size, FIL *fp, int nLine, int chars_per_line, bool isprint /*= false*/)
+{
+    char val[40];
+    if (!file_get_md5(fp, nLine, chars_per_line, val))
+        return false;
+
+    char cur_md5[40];
+    CString s = md5buf(buf, buf_size, NULL);
+    strcpy(cur_md5, (CStringA)s.GetString());
+    bool res = stricmp(val, cur_md5) == 0;
+    if (isprint) 
+        res ? printf("md5 is the same.\r\n") : printf("md5 is different.\r\nCurrent: %s\r\nReference: %s\r\n", cur_md5, val);
+
+    return res;
+}
+
+bool CHgzMD5::assert_equal(FIL *fbin, FIL *fhash, int bytes /*= 0*/, bool isprint /*= false*/)
+{
+    CString s;
+    fhash->SeekToBegin();
+    fhash->ReadString(s);
+    u32 chars_per_line = fhash->GetPosition();
+    if (chars_per_line == 0)
+        return false;
+
+    fbin->SeekToBegin();
+    fhash->SeekToBegin();
+    int i = 0;
+    while(fbin->GetPosition() != fbin->GetLength())
+    {
+        md5binseg(*fbin, bytes, NULL);
+        if (!assert_equal(fhash, i, chars_per_line, isprint))
+            return false;
+        i++;
+    }
+    if (fhash->GetPosition() != fhash->GetLength()) // hash file does not reach the end.
+        return false;
+
+    return true;
+}
+
+
+
+//--------------------
 
 //
 // Core md5 functions, private for internal call.
