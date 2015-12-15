@@ -177,4 +177,7 @@ public:
 
     void UpdateData_To_Ctrol();
     void UpdateData_To_Value();
+
+    int CheckRFSyncFile(CString &sfn, int codeBytes, CStatic *progress = NULL);
+
 };

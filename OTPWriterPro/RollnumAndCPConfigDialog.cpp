@@ -307,7 +307,12 @@ void CRollnumAndCPConfigDialog::OnBnClickedButton_GenerateHashFiles()
         path1 = ATL::CPath(s);
         path1.RenameExtension(_T(".md5"));
         sfn3 = sfn1 + (CString &)path1;
-        md5.md5txt(sfn2, &sfn3, false, (CStatic *)&m_chk_En_RFSynFile4B_Hash);
+        if (!CheckRFSyncFile(sfn2, 4, (CStatic *)&m_chk_En_RFSynFile4B_Hash))
+        {
+            m_ConfigFileCheck.RFSynccode4B_Hash = false;
+        }
+        else
+            md5.md5txt(sfn2, &sfn3, false, (CStatic *)&m_chk_En_RFSynFile4B_Hash);
     }
 
     // 5. 3_bytes_RF_synccode_file.md5
@@ -319,7 +324,12 @@ void CRollnumAndCPConfigDialog::OnBnClickedButton_GenerateHashFiles()
         path1 = ATL::CPath(s);
         path1.RenameExtension(_T(".md5"));
         sfn3 = sfn1 + (CString &)path1;
-        md5.md5txt(sfn2, &sfn3, false, (CStatic *)&m_chk_En_RFSynFile3B_Hash);
+        if (!CheckRFSyncFile(sfn2, 3, (CStatic *)&m_chk_En_RFSynFile3B_Hash))
+        {
+            m_ConfigFileCheck.RFSynccode3B_Hash = false;
+        }
+        else
+            md5.md5txt(sfn2, &sfn3, false, (CStatic *)&m_chk_En_RFSynFile3B_Hash);
     }
 
     RedrawWindow();
@@ -378,34 +388,48 @@ void CRollnumAndCPConfigDialog::OnBnClickedButton_VerifyHashFiles()
     }
 
     // 4. 4_bytes_RF_synccode_file.md5
-    if (m_chk_En_RFSynFile4B_Hash.GetCheck())
-    {
-        m_ctrlRFSynccode4BFile.GetWindowText(s);
-        sfn2 = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath2 + s;
-        path1 = ATL::CPath(s);
-        path1.RenameExtension(_T(".md5"));
-        sfn3 = sfn1 + (CString &)path1;
-        if (md5.md5txt(sfn2, &sfn3, false, (CStatic *)&m_chk_En_RFSynFile4B_Hash, true))
-            m_ConfigFileCheck.RFSynccode4B_Hash = true;
-        else
-            m_ConfigFileCheck.RFSynccode4B_Hash = false;
-        //m_chk_En_RFSynFile4B_Hash.RedrawWindow();
-    }
+    do {
+        if (m_chk_En_RFSynFile4B_Hash.GetCheck())
+        {
+            m_ctrlRFSynccode4BFile.GetWindowText(s);
+            sfn2 = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath2 + s;
+            path1 = ATL::CPath(s);
+            path1.RenameExtension(_T(".md5"));
+            sfn3 = sfn1 + (CString &)path1;
+            if (!CheckRFSyncFile(sfn2, 4, (CStatic *)&m_chk_En_RFSynFile4B_Hash))
+            {
+                m_ConfigFileCheck.RFSynccode4B_Hash = false;
+                break;
+            }
+            if (md5.md5txt(sfn2, &sfn3, false, (CStatic *)&m_chk_En_RFSynFile4B_Hash, true))
+                m_ConfigFileCheck.RFSynccode4B_Hash = true;
+            else
+                m_ConfigFileCheck.RFSynccode4B_Hash = false;
+            //m_chk_En_RFSynFile4B_Hash.RedrawWindow();
+        }
+    } while (0);
 
     // 5. 3_bytes_RF_synccode_file.md5
-    if (m_chk_En_RFSynFile3B_Hash.GetCheck())
-    {
-        m_ctrlRFSynccode3BFile.GetWindowText(s);
-        sfn2 = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath2 + s;
-        path1 = ATL::CPath(s);
-        path1.RenameExtension(_T(".md5"));
-        sfn3 = sfn1 + (CString &)path1;
-        if (md5.md5txt(sfn2, &sfn3, false, (CStatic *)&m_chk_En_RFSynFile3B_Hash, true))
-            m_ConfigFileCheck.RFSynccode3B_Hash = true;
-        else
-            m_ConfigFileCheck.RFSynccode3B_Hash = false;
-        //m_chk_En_RFSynFile3B_Hash.RedrawWindow();
-    }
+    do {
+        if (m_chk_En_RFSynFile3B_Hash.GetCheck())
+        {
+            m_ctrlRFSynccode3BFile.GetWindowText(s);
+            sfn2 = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath2 + s;
+            path1 = ATL::CPath(s);
+            path1.RenameExtension(_T(".md5"));
+            sfn3 = sfn1 + (CString &)path1;
+            if (!CheckRFSyncFile(sfn2, 3, (CStatic *)&m_chk_En_RFSynFile3B_Hash))
+            {
+                m_ConfigFileCheck.RFSynccode3B_Hash = false;
+                break;
+            }
+            if (md5.md5txt(sfn2, &sfn3, false, (CStatic *)&m_chk_En_RFSynFile3B_Hash, true))
+                m_ConfigFileCheck.RFSynccode3B_Hash = true;
+            else
+                m_ConfigFileCheck.RFSynccode3B_Hash = false;
+            //m_chk_En_RFSynFile3B_Hash.RedrawWindow();
+        }
+    } while (0);
 
     RedrawWindow();
 }
@@ -1085,5 +1109,77 @@ void CRollnumAndCPConfigDialog::Convert_Parameters( TEST_OTPWRITE_t &cfg )
         cfg.RadixOfNextRollnumInCfgFile = 10;
     _tprintf(_T("\r\nRadix of \"Next rollnum\" in config file is %d.\r\n\r\n"), cfg.RadixOfNextRollnumInCfgFile);
 
+}
+
+int CRollnumAndCPConfigDialog::CheckRFSyncFile( CString &sfn, int codeBytes, CStatic *progress /*= NULL*/ )
+{
+    int cnt = 0;
+    CStdioFile fin;
+    //CFileException mExcept;
+    if (!fin.Open(sfn, CFile::modeRead | CFile::shareDenyNone | CFile::typeText) || (fin.GetLength() == 0))
+    {
+        if (progress)
+            progress->SetWindowText(_T("X, 0s"));
+        if (fin.GetLength() == 0)
+            hgzMessageBox(_T("File is empty: \r\n\r\n%s"), sfn);
+        else
+            hgzMessageBox(_T("File not found: \r\n\r\n%s"), sfn);
+        return 0;
+    }
+
+    CHgzString s;
+    bool bPass = true;
+
+    fin.SeekToBegin();
+    fin.ReadString(s);
+    int charsPerLine = s.GetLength();
+    fin.SeekToBegin();
+
+    int prog = 0, prog1 = 0;
+
+    __time64_t time1, time2;
+    _time64(&time1);
+    while (fin.ReadString(s) && bPass)
+    {
+        cnt++;
+        
+        if (s.GetLength() != charsPerLine)
+        {
+            bPass = false;
+            hgzMessageBox(_T("Format checking fails: Line lengths are not the same.\n\n%s\n\nLine = %d\nstring = %s"), sfn, cnt, s);
+        }
+        s.Remove(_T('\n'));
+        s.Remove(_T('\r'));
+        if (s.GetLength() != codeBytes*2)
+        {
+            bPass = false;
+            hgzMessageBox(_T("Format checking fails: Line lengths are not the same.\n\n%s\n\nLine = %d\nstring = %s"), sfn, cnt, s);
+        }
+        if (!s.is_xdigit())
+        {
+            bPass = false;
+            hgzMessageBox(_T("Format checking fails: Illegal characters in string.\n\n%s\n\nLine = %d\nstring = %s"), sfn, cnt, s);
+        }
+        
+        if (progress && (cnt%1000 == 0) && prog < (prog1 = fin.GetPosition()*100/fin.GetLength()))
+        {
+            prog = prog1;
+            CString sProg;
+            _time64(&time2);
+            sProg.Format(_T("%d%%, %ds"), prog, time2-time1);
+            progress->SetWindowText(sProg);
+        }
+    }
+    fin.Close();
+
+    if (progress)
+    {
+        CString sProg;
+        _time64(&time2);
+        sProg.Format(_T("%s, %ds"), bPass ? _T("¡Ì") : _T("X"), time2 - time1); // _T("¡Ì") : _T("X")
+        progress->SetWindowText(sProg);
+    }
+
+    return bPass ? cnt : 0;
 }
 
