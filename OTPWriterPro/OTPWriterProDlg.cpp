@@ -175,6 +175,12 @@ BOOL COTPWriterProDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
+	CString chipType[] = { _T("None"), _T("HS6206"), _T("HS6210"), _T("EN25T80"), _T("FPGA_HS6206") };
+	for (auto &var : chipType)
+	{
+		m_ctrlChipSel.AddString(var);
+	}
+
 	m_ctrlChipSel.SetCurSel(0);
 	m_ctrlMemAddrBegin.SetWindowText(_T("0000"));
 	m_ctrlDataLength.SetWindowText(_T("16384"));
@@ -1180,9 +1186,16 @@ void COTPWriterProDlg::OnCbnSelchangeComboSelectChipType()
         m_ChipType = HS__CMD__CHIP_TYPE__OTP__HS6206;
     else if (s.Compare(_T("EN25T80")) == 0)
         m_ChipType = HS__CMD__CHIP_TYPE__FLASH__EN25T80;
-    else if (s.Compare(_T("FPGA_HS6206")) == 0)
-        m_ChipType = HS__CMD__CHIP_TYPE__OTP__HS6206;
-    else
+	else if (s.Compare(_T("FPGA_HS6206")) == 0)
+		m_ChipType = HS__CMD__CHIP_TYPE__FPGA__HS6206;
+	else if (s.Compare(_T("HS6210")) == 0)
+	{
+		m_ChipType = HS__CMD__CHIP_TYPE__OTP__HS6210;
+		m_chkDataLen.SetCheck(FALSE);
+		m_ctrlMemAddrBegin.SetWindowText(_T("0000"));
+		m_ctrlDataLength.SetWindowText(_T("128"));
+	}
+	else
         m_ChipType = HS__CMD__CHIP_TYPE__NONE;
 
     HS_CHIP_TYPE_t chipType = m_ChipType;
@@ -1215,10 +1228,13 @@ void COTPWriterProDlg::OnBnClickedButtonDetectChipType()
     
     switch (chipType)
     {
-    case HS__CMD__CHIP_TYPE__OTP__HS6206:
-        m_ctrlChipSel.SelectString(0, _T("HS6206"));
-        break;
-    case HS__CMD__CHIP_TYPE__FLASH__EN25T80:
+	case HS__CMD__CHIP_TYPE__OTP__HS6206:
+		m_ctrlChipSel.SelectString(0, _T("HS6206"));
+		break;
+	case HS__CMD__CHIP_TYPE__OTP__HS6210:
+		m_ctrlChipSel.SelectString(0, _T("HS6210"));
+		break;
+	case HS__CMD__CHIP_TYPE__FLASH__EN25T80:
         m_ctrlChipSel.SelectString(0, _T("EN25T80"));
         break;
     
@@ -1556,7 +1572,6 @@ void COTPWriterProDlg::OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSys
 
 void COTPWriterProDlg::ProcessRollnum()
 {
-    //AfxGetApp()->WriteProfileInt(_T("Settings"), _T("EnableRollnum"), m_bRollnumEnable);
     m_bRollnumEnable ? m_ctrlRollnum.SetWindowText(_T(" 滚码烧录 [√]")) : m_ctrlRollnum.SetWindowText(_T(" 滚码烧录 [  ]"));
 
     if (!m_bRollnumEnable)

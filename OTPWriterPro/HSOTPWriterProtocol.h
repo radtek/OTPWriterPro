@@ -142,6 +142,7 @@ typedef enum _HS_CHIP_TYPE_t {
     // OTP
     HS__CMD__CHIP_TYPE__OTP__HS6206    =    0x01,
     HS__CMD__CHIP_TYPE__EEPROM_HS66XX  =    0x02,
+	HS__CMD__CHIP_TYPE__OTP__HS6210    =    0x03,
     
     // FPGA
     HS__CMD__CHIP_TYPE__FPGA__HS6206   =    0x41,
