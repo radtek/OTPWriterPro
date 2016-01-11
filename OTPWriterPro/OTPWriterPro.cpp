@@ -30,6 +30,26 @@ COTPWriterProApp::COTPWriterProApp()
 }
 
 
+// 
+void print(int pos, const TCHAR *szFormat, ...)
+{
+	// pos 为相对于最后位置的字符数
+
+	va_list arglist;
+	va_start(arglist, szFormat);
+	TCHAR *buf = new TCHAR[_vsctprintf(szFormat, arglist) + 1];
+	//TCHAR *buf = (TCHAR *)_alloca((_vsctprintf(szFormat, arglist)+1)*sizeof(TCHAR)); // 动态分配栈内存，无需手动释放。
+	_vstprintf(buf, szFormat, arglist);
+
+	CEdit &edit = (reinterpret_cast<COTPWriterProDlg*>(AfxGetApp()->GetMainWnd()))->m_ctrlEdit;
+	int len = edit.GetWindowTextLength();
+	edit.SetSel(len + pos, len); //将插入光标放在最后 
+	edit.ReplaceSel(buf);
+	//m_ctrlEdit.ScrollWindow(0,0); //滚动到插入点 (滚动条始终在底部，不闪动)
+	delete[] buf;
+}
+
+
 // 唯一的一个 COTPWriterProApp 对象
 
 COTPWriterProApp theApp;

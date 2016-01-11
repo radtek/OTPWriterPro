@@ -35,6 +35,7 @@ public:
 // Globals
 
 extern COTPWriterProApp theApp;
+void print(int pos, const TCHAR *szFormat, ...);
 
 extern BOOL g_bCancel/* = FALSE*/;
 extern CMutex g_mutex;

@@ -546,7 +546,8 @@ void CRollnumAndCPConfigDialog::ConfigFile_Parser(void)
         else
         {
             m_ConfigFileCheck.CP_Config_File1 = false;
-            AfxMessageBox(_T("Warning: Failed to open file: CP_Config_File1.txt.\r\n"));
+            //AfxMessageBox(_T("Warning: Failed to open file: CP_Config_File1.txt.\r\n"));
+			print(0, _T("Warning: Failed to open file: CP_Config_File1.txt.\r\n"));
         }
 
         if (CP_Config_File.Open((CString &)m_CPConfigFilePath+(CString &)s_strConfigFilePath2+(CString &)s_strConfigFileName2, CFile::modeRead | CFile::shareDenyNone, &mExcept))
@@ -597,7 +598,8 @@ void CRollnumAndCPConfigDialog::ConfigFile_Parser(void)
         else
         {
             m_ConfigFileCheck.CP_Config_File2 = false;
-            AfxMessageBox(_T("Warning: Failed to open file: CP_Config_File2.txt.\r\n"));
+            //AfxMessageBox(_T("Warning: Failed to open file: CP_Config_File2.txt.\r\n"));
+			print(0, _T("Warning: Failed to open file: CP_Config_File2.txt.\r\n"));
         }
 
     }

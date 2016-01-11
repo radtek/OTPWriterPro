@@ -1397,6 +1397,7 @@ void COTPWriterProDlg::FillRollnumRegionForWrite(void)
     if (!m_RollnumAndCPConfigDialog.IsRollnumValid() || !m_RollnumAndCPConfigDialog.IsRFSyncodeValid())
     {
         m_bRollnumEnable = FALSE;
+		AfxGetApp()->WriteProfileInt(_T("Settings"), _T("EnableRollnum"), m_bRollnumEnable);
         m_bRollnumEnable ? m_ctrlRollnum.SetWindowText(_T(" ¹öÂëÉÕÂ¼ [¡Ì]")) : m_ctrlRollnum.SetWindowText(_T(" ¹öÂëÉÕÂ¼ [  ]"));
     }
 }
@@ -1514,6 +1515,7 @@ void COTPWriterProDlg::OnRollnumAndCPConfig()
 void COTPWriterProDlg::OnRollnumEnable()
 {
     m_bRollnumEnable = !m_bRollnumEnable;
+	AfxGetApp()->WriteProfileInt(_T("Settings"), _T("EnableRollnum"), m_bRollnumEnable);
     return ProcessRollnum();
 }
 
@@ -1554,7 +1556,7 @@ void COTPWriterProDlg::OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSys
 
 void COTPWriterProDlg::ProcessRollnum()
 {
-    AfxGetApp()->WriteProfileInt(_T("Settings"), _T("EnableRollnum"), m_bRollnumEnable);
+    //AfxGetApp()->WriteProfileInt(_T("Settings"), _T("EnableRollnum"), m_bRollnumEnable);
     m_bRollnumEnable ? m_ctrlRollnum.SetWindowText(_T(" ¹öÂëÉÕÂ¼ [¡Ì]")) : m_ctrlRollnum.SetWindowText(_T(" ¹öÂëÉÕÂ¼ [  ]"));
 
     if (!m_bRollnumEnable)

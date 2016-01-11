@@ -5,6 +5,8 @@
 #include "afxcmn.h"
 //#include "uxtheme.h"
 
+void print(int pos, const TCHAR *szFormat, ...);
+
 
 // CRollnumAndCPConfigDialog ¶Ô»°¿ò
 
