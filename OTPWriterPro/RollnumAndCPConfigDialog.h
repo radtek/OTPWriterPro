@@ -182,4 +182,6 @@ public:
 
     int CheckRFSyncFile(CString &sfn, int codeBytes, CStatic *progress = NULL);
 
+	afx_msg void OnEnSetfocusEdit13();
+	afx_msg void OnEnKillfocusEditCpconfigfilepath();
 };

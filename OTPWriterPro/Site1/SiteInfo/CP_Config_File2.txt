@@ -1,10 +1,10 @@
 4_bytes_RF_syncode file: AddrMode1-141103-1717-f000.txt
 3_bytes_RF_syncode file: AddrMode2-141103-1744-f000.txt
-RF communication test Frequency 1: 2491
-RF communication test Frequency 2: 2492
-RF communication test Frequency 3: 2493
+RF communication test Frequency 1: 2486
+RF communication test Frequency 2: 2487
+RF communication test Frequency 3: 2488
 OTP address to write rollnum: 0x1FF0
 Rollnum min: 0x00000000
 Rollnum max: 0x00007FFF
-Next rollnum: 0x00000008
-Previous updated rollnum: 0x00000007
+Next rollnum: 0x00000000
+Previous updated rollnum: 0x00000000

@@ -101,6 +101,8 @@ BEGIN_MESSAGE_MAP(CRollnumAndCPConfigDialog, CDialogEx)
     ON_WM_CTLCOLOR()
     ON_CBN_SELCHANGE(IDC_COMBO2, &CRollnumAndCPConfigDialog::OnCbnSelchangeCombo2)
     ON_CBN_SELCHANGE(IDC_COMBO1, &CRollnumAndCPConfigDialog::OnCbnSelchangeCombo1)
+	ON_EN_SETFOCUS(IDC_EDIT13, &CRollnumAndCPConfigDialog::OnEnSetfocusEdit13)
+	ON_EN_KILLFOCUS(IDC_EDIT_CPConfigFilePath, &CRollnumAndCPConfigDialog::OnEnKillfocusEditCpconfigfilepath)
 END_MESSAGE_MAP()
 
 
@@ -219,7 +221,8 @@ void CRollnumAndCPConfigDialog::OnBnClickedButton_UpdateConfigFile()
         CP_Config_File2.WriteString((s.Format(_T("%s: %s\n"), s_strLinePrefix[8], (m_ctrlRollnumMin.GetWindowText(s1), s1)), s));
         CP_Config_File2.WriteString((s.Format(_T("%s: %s\n"), s_strLinePrefix[9], (m_ctrlRollnumMax.GetWindowText(s1), s1)), s));
         CP_Config_File2.WriteString((s.Format(_T("%s: %s\n"), s_strLinePrefix[10], (m_ctrlNextRollnum.GetWindowText(s1), s1)), s));
-        CP_Config_File2.WriteString((s.Format(_T("%s: %s\n"), s_strLinePrefix[11], (m_ctrlPreviousUpdatedRollnum.GetWindowText(s1), s1.IsEmpty() ? (m_ctrlNextRollnum.GetWindowText(s1), s1) : s1)), s));
+		//CP_Config_File2.WriteString((s.Format(_T("%s: %s\n"), s_strLinePrefix[11], (m_ctrlPreviousUpdatedRollnum.GetWindowText(s1), s1.IsEmpty() ? (m_ctrlNextRollnum.GetWindowText(s1), s1) : s1)), s));
+		CP_Config_File2.WriteString((s.Format(_T("%s: %s\n"), s_strLinePrefix[11], (m_ctrlNextRollnum.GetWindowText(s1), s1)), s));
 
         CP_Config_File2.Close();
     }
@@ -1185,3 +1188,28 @@ int CRollnumAndCPConfigDialog::CheckRFSyncFile( CString &sfn, int codeBytes, CSt
     return bPass ? cnt : 0;
 }
 
+
+
+void CRollnumAndCPConfigDialog::OnEnSetfocusEdit13()
+{
+	// 当前滚码编辑框获得输入焦点时，检查其值是否在有效滚码范围之内，若不在，则自动将其值修正为有效滚码最小值。
+	CString sminRN, smaxRN, snextRN;
+	m_ctrlRollnumMin.GetWindowText(sminRN);
+	m_ctrlRollnumMax.GetWindowText(smaxRN);
+	m_ctrlNextRollnum.GetWindowText(snextRN);
+
+	u32 minRN, maxRN, nextRN;
+	minRN = _tcstoul(sminRN, NULL, 0);
+	maxRN = _tcstoul(smaxRN, NULL, 0);
+	nextRN = _tcstoul(snextRN, NULL, 0);
+
+	if (nextRN < minRN || maxRN < nextRN)
+		m_ctrlNextRollnum.SetWindowText(sminRN);
+}
+
+
+void CRollnumAndCPConfigDialog::OnEnKillfocusEditCpconfigfilepath()
+{
+	// 配置文件路径编辑框失去焦点时，更新 m_ 变量。
+	GetDlgItemText(IDC_EDIT_CPConfigFilePath, m_CPConfigFilePath);
+}
