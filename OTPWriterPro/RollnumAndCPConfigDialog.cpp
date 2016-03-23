@@ -167,6 +167,9 @@ void CRollnumAndCPConfigDialog::OnBnClickedButton_ParseConfigFile()
 
 void CRollnumAndCPConfigDialog::OnBnClickedButton_UpdateConfigFile()
 {
+	if (IDOK != AfxMessageBox(_T("更新配置文件后，原有设置将无法恢复，确定要更新吗？"), MB_OKCANCEL | MB_ICONEXCLAMATION | MB_DEFBUTTON2))
+		return;
+
     // Check if all items ready
     UpdateData_To_Value();
     TEST_OTPWRITE_t cfg;
