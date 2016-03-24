@@ -46,11 +46,11 @@
     <LinkIncremental>true</LinkIncremental>
     <SourcePath>$(SourcePath)</SourcePath>
     <IncludePath>$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Users\hgz\work\OTPWriterPro\OTPWriterPro\msusbhid\lib\win7;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(MSBuildProjectDirectory)\msusbhid\lib\win7;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>D:\Users\hgz\work\OTPWriterPro\OTPWriterPro\msusbhid\lib\win7;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(MSBuildProjectDirectory)\msusbhid\lib\win7;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
