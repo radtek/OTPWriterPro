@@ -1184,10 +1184,10 @@ void COTPWriterProDlg::OnCbnSelchangeComboSelectChipType()
         m_ChipType = HS__CMD__CHIP_TYPE__NONE;
     else if (s.Compare(_T("HS6206")) == 0)
         m_ChipType = HS__CMD__CHIP_TYPE__OTP__HS6206;
-    else if (s.Compare(_T("EN25T80")) == 0)
-        m_ChipType = HS__CMD__CHIP_TYPE__FLASH__EN25T80;
-	else if (s.Compare(_T("FPGA_HS6206")) == 0)
-		m_ChipType = HS__CMD__CHIP_TYPE__FPGA__HS6206;
+	else if (s.Compare(_T("EN25T80")) == 0)
+		m_ChipType = HS__CMD__CHIP_TYPE__FLASH__EN25T80;
+	else if (s.Compare(_T("FPGA_HS6206")) == 0)// HS__CMD__CHIP_TYPE__FPGA__HS6206 is not used in downstream machine. This type is used only by upper-stream machine to implement different Auto functions.
+		m_ChipType = HS__CMD__CHIP_TYPE__OTP__HS6206;
 	else if (s.Compare(_T("HS6210")) == 0)
 	{
 		m_ChipType = HS__CMD__CHIP_TYPE__OTP__HS6210;

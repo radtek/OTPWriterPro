@@ -11,3 +11,5 @@ cachedir
 *.user
 *~
 *.aps
+.vs
+*.suo
