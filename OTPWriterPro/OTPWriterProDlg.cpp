@@ -1228,20 +1228,22 @@ void COTPWriterProDlg::OnBnClickedButtonDetectChipType()
     
     switch (chipType)
     {
-	case HS__CMD__CHIP_TYPE__OTP__HS6206:
-		m_ctrlChipSel.SelectString(0, _T("HS6206"));
-		break;
-	case HS__CMD__CHIP_TYPE__OTP__HS6210:
-		m_ctrlChipSel.SelectString(0, _T("HS6210"));
-		break;
-	case HS__CMD__CHIP_TYPE__FLASH__EN25T80:
-        m_ctrlChipSel.SelectString(0, _T("EN25T80"));
-        break;
-    
     case HS__CMD__CHIP_TYPE__NONE:
     default:
         m_ctrlChipSel.SetCurSel(-1);
         break;
+	case HS__CMD__CHIP_TYPE__OTP__HS6206:
+		m_ctrlChipSel.SelectString(0, _T("HS6206"));
+		break;
+	case HS__CMD__CHIP_TYPE__FLASH__EN25T80:
+		m_ctrlChipSel.SelectString(0, _T("EN25T80"));
+		break;
+	case HS__CMD__CHIP_TYPE__FPGA__HS6206:
+		m_ctrlChipSel.SelectString(0, _T("FPGA_HS6206"));
+		break;
+	case HS__CMD__CHIP_TYPE__OTP__HS6210:
+		m_ctrlChipSel.SelectString(0, _T("HS6210"));
+		break;
     }
 
     OnCbnSelchangeComboSelectChipType(); // set downstream machine to enter into correct mode.
