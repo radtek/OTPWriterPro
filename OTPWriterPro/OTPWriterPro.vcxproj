@@ -114,6 +114,7 @@
     <None Include="res\OTPWriterPro.rc2" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ble_addr_gen.h" />
     <ClInclude Include="DlgMD5.h" />
     <ClInclude Include="DlgTools.h" />
     <ClInclude Include="HgzMD5.h" />
@@ -140,6 +141,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ble_addr_gen.cpp" />
     <ClCompile Include="DlgMD5.cpp" />
     <ClCompile Include="DlgTools.cpp" />
     <ClCompile Include="HgzMD5.cpp" />

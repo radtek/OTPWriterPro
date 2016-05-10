@@ -125,6 +125,7 @@ public:
 //    afx_msg void OnBnClickedButtonClearBuffer1();
     afx_msg void OnCbnSelchangeComboSelectChipType();
     afx_msg void OnBnClickedButtonDetectChipType();
+	void OnBnClickedButtonReadChipID();
     afx_msg void OnBnClickedButtonVersionNum();
     afx_msg void OnBnClickedCheckLengthHex();
 

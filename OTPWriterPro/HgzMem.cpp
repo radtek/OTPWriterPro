@@ -619,10 +619,7 @@ BOOL CHgzMem::OTPSPIReset( UINT32 &res )
 
 BOOL CHgzMem::DetectChipType( HS_CHIP_TYPE_t *ct )
 {
-    UINT32 res;
-    BOOL bRes = ExecuteCmd_Cmd1Datax(HS__CMD__GET__CHIP_TYPE, 0, NULL, &res);
-    *ct = (HS_CHIP_TYPE_t)res;
-    return res;
+    return ExecuteCmd_Cmd1Datax(HS__CMD__GET__CHIP_TYPE, 0, NULL, (u32*)ct);
 }
 
 BOOL CHgzMem::SetChipType( HS_CHIP_TYPE_t *ct )
@@ -630,7 +627,12 @@ BOOL CHgzMem::SetChipType( HS_CHIP_TYPE_t *ct )
     return ExecuteCmd_Cmd1Datax(HS__CMD__SET__CHIP_TYPE, 1, (UINT8 *)ct);
 }
 
-BOOL CHgzMem::GetFirmwareVersionInfo( UINT8 *info )
+BOOL CHgzMem::GetChipID(UINT32 *chip_id)
+{
+	return ExecuteCmd_Cmd1Datax(HS__CMD__GET__CHIP_ID, 0, NULL, chip_id);
+}
+
+BOOL CHgzMem::GetFirmwareVersionInfo(UINT8 *info)
 {
     CHidReport r;
 

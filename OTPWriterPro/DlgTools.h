@@ -19,5 +19,6 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 public:
-    afx_msg void OnBnClickedButton1();
+    afx_msg void OnBnClickedButton1_MD5();
+	afx_msg void OnBnClickedButton2_RF_Addr_Gen();
 };

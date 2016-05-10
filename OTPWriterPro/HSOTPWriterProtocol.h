@@ -161,6 +161,7 @@ typedef enum _HS_MEM_TYPE_t {
 } HS_MEM_TYPE_t;
 
 #define HS__CMD__GET__FIRMWARE_VERSION      0x03    // H2D, D2H: <LEN(1), CSB(1), HS__CMD(1), HS__CMD__GET__FIRMWARE_VERSION(1), Data(0..61)>
+#define HS__CMD__GET__CHIP_ID	0x04	// H2D, D2H: <LEN(1), CSB(1), HS__CMD(1), HS__CMD__GET__CHIP_ID(1), CHIP_ID(2, BIT15-BIT0)>
 
 
 // ERR relevent packet

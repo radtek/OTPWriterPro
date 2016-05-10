@@ -1207,6 +1207,9 @@ void COTPWriterProDlg::OnCbnSelchangeComboSelectChipType()
         str += _T(" -- Ê§°Ü£¡\r\n");
 
     EditCtrlOutput(0, str.GetString());
+
+	if (m_ChipType == HS__CMD__CHIP_TYPE__OTP__HS6210)
+		OnBnClickedButtonReadChipID();
 }
 
 
@@ -1249,6 +1252,23 @@ void COTPWriterProDlg::OnBnClickedButtonDetectChipType()
     OnCbnSelchangeComboSelectChipType(); // set downstream machine to enter into correct mode.
 }
 
+void COTPWriterProDlg::OnBnClickedButtonReadChipID()
+{
+	PrintCurrentTime();
+
+	u32 chip_id = 0;
+	BOOL bRes = g_mem.GetChipID(&chip_id);
+	if (bRes)
+	{
+		EditCtrlOutput(0, _T("CHIP_ID = 0x%04X\r\n"), chip_id);
+	}
+	else
+	{
+		EditCtrlOutput(0, _T("¼ì²â CHIP_ID Ê§°Ü£¡\r\n"));
+		return;
+	}
+
+}
 
 void COTPWriterProDlg::OnBnClickedButtonVersionNum()
 {

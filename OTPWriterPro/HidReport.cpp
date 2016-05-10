@@ -176,6 +176,7 @@ BOOL CHidReport::BaseReport( INT dataLen, UINT8 *pData )
     return TRUE;
 }
 
+// Build report.
 BOOL CHidReport::BaseReport_CxDx( INT cmdLen, UINT8 *pCmd, INT dataLen, UINT8 *pData )
 {
     m_pkt.basePkt.len = 0;
@@ -201,6 +202,7 @@ BOOL CHidReport::BaseReport_C1Dx( UINT8 cmdL1, INT dataLen, UINT8 *pData )
     return BaseReport_CxDx(1, &cmdL1, dataLen, pData);
 }
 
+// Build report.
 BOOL CHidReport::BaseReport_C2Dx( UINT8 cmdL1, UINT8 cmdL2, INT dataLen, UINT8 *pData )
 {
     UINT8 cmd[2];
@@ -447,6 +449,9 @@ UINT32 CHidReport::GetResult()
             case HS__CMD__SET__CHIP_TYPE:
             case HS__CMD__GET__CHIP_TYPE:
                 return m_pkt.valPkt.val;
+			case HS__CMD__GET__CHIP_ID:
+				u32 x = *(u32*)m_pkt.cmdPkt.data;
+				return hgzRevertByteOrder32(x);
 
             }
         }
@@ -484,6 +489,7 @@ UINT CHidReport::GetReportLength()
     return GetPacketLength()+1;
 }
 
+// Build report.
 BOOL CHidReport::CmdReport( UINT8 cmdL1, UINT8 dataLen, UINT8 *pData )
 {
     return BaseReport_C2Dx(HS__CMD, cmdL1, dataLen, pData);

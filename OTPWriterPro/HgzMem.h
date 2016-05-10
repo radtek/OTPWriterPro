@@ -35,6 +35,7 @@ public:
 
     BOOL DetectChipType( HS_CHIP_TYPE_t *ct );
     BOOL SetChipType(HS_CHIP_TYPE_t *ct);
+	BOOL GetChipID(UINT32 *chip_id);
     INT32 Write(UINT32 addr, UINT32 length);
     INT32 Read(UINT32 addr, UINT32 length);
     BOOL Verify(UINT32 addr, UINT32 length);
