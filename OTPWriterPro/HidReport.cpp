@@ -450,8 +450,8 @@ UINT32 CHidReport::GetResult()
             case HS__CMD__GET__CHIP_TYPE:
                 return m_pkt.valPkt.val;
 			case HS__CMD__GET__CHIP_ID:
-				u32 x = *(u32*)m_pkt.cmdPkt.data;
-				return hgzRevertByteOrder32(x);
+				u16 x = *(u16*)m_pkt.cmdPkt.data;
+				return hgzRevertByteOrder16(x);
 
             }
         }
