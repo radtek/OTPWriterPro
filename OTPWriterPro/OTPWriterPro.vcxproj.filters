@@ -117,6 +117,9 @@
     <ClInclude Include="ble_addr_gen.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="DlgCRC.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="OTPWriterPro.cpp">
@@ -183,6 +186,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="ble_addr_gen.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgCRC.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="crc.c">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

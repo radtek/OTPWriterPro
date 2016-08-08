@@ -115,6 +115,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ble_addr_gen.h" />
+    <ClInclude Include="DlgCRC.h" />
     <ClInclude Include="DlgMD5.h" />
     <ClInclude Include="DlgTools.h" />
     <ClInclude Include="HgzMD5.h" />
@@ -142,6 +143,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ble_addr_gen.cpp" />
+    <ClCompile Include="crc.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="DlgCRC.cpp" />
     <ClCompile Include="DlgMD5.cpp" />
     <ClCompile Include="DlgTools.cpp" />
     <ClCompile Include="HgzMD5.cpp" />

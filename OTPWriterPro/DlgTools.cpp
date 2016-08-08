@@ -7,6 +7,7 @@
 #include "afxdialogex.h"
 #include "DlgMD5.h"
 #include "ble_addr_gen.h"
+#include "DlgCRC.h"
 
 
 // CDlgTools 对话框
@@ -32,6 +33,7 @@ void CDlgTools::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CDlgTools, CDialogEx)
     ON_BN_CLICKED(IDC_BUTTON1, &CDlgTools::OnBnClickedButton1_MD5)
 	ON_BN_CLICKED(IDC_BUTTON2, &CDlgTools::OnBnClickedButton2_RF_Addr_Gen)
+	ON_BN_CLICKED(IDC_BUTTON3, &CDlgTools::OnBnClickedButton3_CRC8)
 END_MESSAGE_MAP()
 
 
@@ -54,3 +56,13 @@ void CDlgTools::OnBnClickedButton2_RF_Addr_Gen()
 		printf("%lx\n", addr);
 	}
 }
+
+
+void CDlgTools::OnBnClickedButton3_CRC8()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CDlgCRC dlg;
+	dlg.DoModal();
+}
+
+
