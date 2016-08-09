@@ -117,6 +117,7 @@
     <ClInclude Include="ble_addr_gen.h" />
     <ClInclude Include="DlgCRC.h" />
     <ClInclude Include="DlgMD5.h" />
+    <ClInclude Include="DlgRepeatInBrackets.h" />
     <ClInclude Include="DlgTools.h" />
     <ClInclude Include="HgzMD5.h" />
     <ClInclude Include="HgzMem.h" />
@@ -149,6 +150,7 @@
     </ClCompile>
     <ClCompile Include="DlgCRC.cpp" />
     <ClCompile Include="DlgMD5.cpp" />
+    <ClCompile Include="DlgRepeatInBrackets.cpp" />
     <ClCompile Include="DlgTools.cpp" />
     <ClCompile Include="HgzMD5.cpp" />
     <ClCompile Include="HgzMem.cpp" />

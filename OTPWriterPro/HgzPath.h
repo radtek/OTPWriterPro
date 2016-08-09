@@ -85,14 +85,14 @@ public:
     CString GetFileExt()   { return _ext; }
 
     // Return the resulting full path.
-    CString Append(TCHAR *s)          { GetFullPath(); _tcscat_s(_path_buffer, s); split();     return GetFullPath(); }
-    CString ChangePath(TCHAR *s)      { _tcscpy_s(_path_buffer, s); split();     return GetFullPath(); }
-    CString ChangeDrive(TCHAR *s)     { _tcscpy_s(_drive, s);                    return GetDrive(); }
-    CString ChangeDir(TCHAR *s)       { _tcscpy_s(_dir,   s);                    return GetDir(); }
-    CString ChangeFullDir(TCHAR *s)   { split_full_dir(s);                       return GetFullDir(); }
-    CString ChangeFileName(TCHAR *s)  { _tcscpy_s(_fname, s); split_file_name(); return GetFileName(); }
-    CString ChangeFileTitle(TCHAR *s) { _tcscpy_s(_title, s); build_file_name(); return GetFileTitle(); }
-    CString ChangeFileExt(TCHAR *s)   { _tcscpy_s(_ext,   s); build_file_name(); return GetFileExt(); }
+    CString Append(const TCHAR *s)          { GetFullPath(); _tcscat_s(_path_buffer, s); split();     return GetFullPath(); }
+    CString ChangePath(const TCHAR *s)      { _tcscpy_s(_path_buffer, s); split();     return GetFullPath(); }
+    CString ChangeDrive(const TCHAR *s)     { _tcscpy_s(_drive, s);                    return GetDrive(); }
+    CString ChangeDir(const TCHAR *s)       { _tcscpy_s(_dir,   s);                    return GetDir(); }
+    CString ChangeFullDir(const TCHAR *s)   { split_full_dir(s);                       return GetFullDir(); }
+    CString ChangeFileName(const TCHAR *s)  { _tcscpy_s(_fname, s); split_file_name(); return GetFileName(); }
+    CString ChangeFileTitle(const TCHAR *s) { _tcscpy_s(_title, s); build_file_name(); return GetFileTitle(); }
+    CString ChangeFileExt(const TCHAR *s)   { _tcscpy_s(_ext,   s); build_file_name(); return GetFileExt(); }
     
 
     int  SplitDir(void); // return number of levels of the DIR.

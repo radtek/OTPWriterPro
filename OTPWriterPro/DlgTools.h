@@ -22,4 +22,5 @@ public:
     afx_msg void OnBnClickedButton1_MD5();
 	afx_msg void OnBnClickedButton2_RF_Addr_Gen();
 	afx_msg void OnBnClickedButton3_CRC8();
+	afx_msg void OnBnClickedButton4();
 };

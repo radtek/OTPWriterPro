@@ -47,18 +47,14 @@ void CDlgCRC::OnEnChangeMfceditbrowse1()
 	// 同时将 ENM_CHANGE 标志“或”运算到掩码中。
 
 	// TODO:  在此添加控件通知处理程序代码
-	u8 crc;
-
 	CString filePath;
 	m_ctrlFileToBeCRCed.UpdateWindow();
 	m_ctrlFileToBeCRCed.GetWindowText(filePath);
 
 
-
 	if (!generate_crc8_for_each_line_of_each_file_and_store_in_another_file(filePath))
 		return;
 
-	
 
 }
 
@@ -81,7 +77,7 @@ bool CDlgCRC::generate_crc8_for_each_line_of_a_file_and_store_in_another_file(CS
 	left += _T("-crc8");
 	left += right;
 
-	destPath.ChangeFileTitle((TCHAR*)left.GetString());
+	destPath.ChangeFileTitle(left.GetString());
 	CStdioFile mFileCRC;
 	mFileCRC.Open(destPath.GetFullPath(), CFile::modeReadWrite | CFile::shareDenyNone | CFile::typeText | CFile::modeCreate);
 	
@@ -112,3 +108,4 @@ bool CDlgCRC::generate_crc8_for_each_line_of_each_file_and_store_in_another_file
 	}
 	return true;
 }
+
