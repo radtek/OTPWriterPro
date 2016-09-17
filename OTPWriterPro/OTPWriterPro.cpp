@@ -5,6 +5,7 @@
 #include "stdafx.h"
 #include "OTPWriterPro.h"
 #include "OTPWriterProDlg.h"
+#include "hgz/hgz.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -113,9 +114,25 @@ BOOL COTPWriterProApp::InitInstance()
 }
 
 //////////////////////////////////////////////////////////////////////////////
+void GlobalInit()
+{
+	g_ChipType = HS__CMD__CHIP_TYPE__NONE;
+
+	g_hs6210_rollnum_full_path = GetModuleDir() + _T("\\ChipType\\HS6210\\rollnum.txt");
+	g_hs6210_rf_syncode_full_path = GetModuleDir() + _T("\\ChipType\\HS6210\\common\\RFAddr\\AddrMode1-150302-2013-repeat-f000.txt");
+	
+}
+
+bool IsChipType_HS6210() {
+	return g_ChipType == HS__CMD__CHIP_TYPE__OTP__HS6210;
+}
+//////////////////////////////////////////////////////////////////////////////
 // Globals
 BOOL g_bCancel = FALSE;
 CMutex g_mutex;
+HS_CHIP_TYPE_t g_ChipType;
+CString g_hs6210_rollnum_full_path = _T("");
+CString g_hs6210_rf_syncode_full_path = _T("");
 
 CHgzMem g_mem;
 CProgressCtrl *g_pctrlProgress;

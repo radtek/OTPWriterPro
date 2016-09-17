@@ -7,6 +7,7 @@
 using std::string;
 using std::wstring;
 
+
 class CHgzMD5
 {
 public:

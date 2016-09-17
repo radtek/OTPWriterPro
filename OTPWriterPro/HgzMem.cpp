@@ -6,11 +6,12 @@
 
 CHgzMem::CHgzMem( INT nSize /*= 16*1024*/ )
 {
+	ChipType(HS__CMD__CHIP_TYPE__NONE);
     m_nId = 0;
     m_nSizeUsed = 0;
     m_buf.SetSize(nSize);
     m_bufFlag.SetSize((nSize));
-    memset(m_buf.GetData(), 0, nSize);
+    memset(m_buf.GetData(), m_BlankByte, nSize);
     memset(m_bufFlag.GetData(), 0, nSize);
 }
 
@@ -80,7 +81,7 @@ BOOL CHgzMem::ClearBuf( UINT32 addr, UINT32 len )
         nSize = len;
     }
 
-    memset(m_buf.GetData()+addr, 0, nSize);
+    memset(m_buf.GetData()+addr, m_BlankByte, nSize);
     memset(m_bufFlag.GetData()+addr, 0, nSize);
     return nSize;
 }

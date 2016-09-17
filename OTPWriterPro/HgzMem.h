@@ -18,7 +18,7 @@ public:
     void Id(INT val) { m_nId = val; }
 
     HS_CHIP_TYPE_t ChipType() const { return m_eChipType; }
-    void ChipType(HS_CHIP_TYPE_t val) { m_eChipType = val; }
+    void ChipType(HS_CHIP_TYPE_t val) { m_eChipType = val; m_BlankByte = (m_eChipType == HS__CMD__CHIP_TYPE__OTP__HS6210) ? 0xFF : 0x00; }
 
     UINT8 *GetBuf(void){ return m_buf.GetData(); }
     UINT8 *GetBufFlag(void){ return m_bufFlag.GetData(); }
@@ -59,6 +59,8 @@ public:
 
     typedef BOOL (CHgzMem::*pMemFunc_Cmd1Data0)(UINT32 &);
 
+	unsigned char BlankByte() const { return m_BlankByte; }
+	void BlankByte(unsigned char val) { m_BlankByte = val; }
 private:
     INT CompareMemData( CHidReport &r, UINT8 *pBuf );
     INT CompareMemDataEx( CHidReport &r, UINT8 *pBuf, UINT32 addrIgnoreBegin, UINT32 addrIgnoreEnd );
@@ -72,6 +74,7 @@ private:
     INT m_nId;
     INT m_nSizeUsed;
     HS_CHIP_TYPE_t m_eChipType;
+	unsigned char m_BlankByte;
     
 };
 

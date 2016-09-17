@@ -52,6 +52,9 @@ CRollnumAndCPConfigDialog::CRollnumAndCPConfigDialog(CWnd* pParent /*=NULL*/)
     m_color_config1 = hgzColor_DarkGreen;
     m_color_config2 = hgzColor_DarkGreen;
 
+	m_hs6210_rf_addr_table.rollnum = 0;
+	
+
     //m_brush.CreateSolidBrush(hgzColor_DarkYellow);
 }
 
@@ -491,9 +494,73 @@ BOOL CRollnumAndCPConfigDialog::OnInitDialog()
     // 异常: OCX 属性页应返回 FALSE
 }
 
+bool CRollnumAndCPConfigDialog::GetRFAddr5B(u32 rollnum, ROLLNUM_RFAddr_TABLE_t *rf_addr_tb) {
+	// compute and locate which file will the rollnum corresponding synccode reside in
+	u8 the_5th_byte = rollnum / RF_TOTAL_SYNCCODES;
+	u32 rollnum_rem = rollnum % RF_TOTAL_SYNCCODES;
+	u32 fileno = rollnum_rem / RF_LINES_PER_SYNCCODE_FILE;
+	u32 line = rollnum_rem % RF_LINES_PER_SYNCCODE_FILE;
+
+	CHgzPath destPath(g_hs6210_rf_syncode_full_path);
+	CHgzString s = destPath.GetFileTitle();
+	CString left = s.Left(s.GetLength() - 5);
+	s.Format(_T("-f%03d"), fileno);
+	left += s;
+	destPath.ChangeFileTitle(left.GetString());
+	g_hs6210_rf_syncode_full_path = destPath.GetFullPath();
+
+	CStdioFile f;
+	f.Open(g_hs6210_rf_syncode_full_path, CFile::modeRead | CFile::typeText);
+	f.ReadString(s);
+	int charsPerLine = f.GetPosition();
+	f.Seek(charsPerLine*line, CFile::begin);
+	f.ReadString(s);
+	f.Close();
+	
+	rf_addr_tb->sync_code_4b = s.stoul(0, 16);
+	rf_addr_tb->pipe_addr = the_5th_byte;
+	rf_addr_tb->crc8 = crc8(&rf_addr_tb->pipe_addr, 5);
+	
+	return true;
+}
+
 #define Enable_CP_Config_File_Hash_Check_In_Parser 0
 void CRollnumAndCPConfigDialog::ConfigFile_Parser(void)
 {
+	if (g_ChipType == HS__CMD__CHIP_TYPE__OTP__HS6210) {
+		CHgzString s;
+		
+		// Check existense of files.
+		CFileFind finder;
+		if (!finder.FindFile(g_hs6210_rf_syncode_full_path)) {
+			s.Format(_T("\r\nThere's no RF Synccode file. \r\nPlace files: \"AddrMode1-150302-2013-repeat-f000.txt\" - \"AddrMode1-150302-2013-repeat-f271.txt\"\r\n under current executive directory: \r\n%s\r\n"), g_hs6210_rf_syncode_full_path);
+			print(0, s);
+			return;
+		}
+		
+		// Read rollnum from rollnum.txt
+		if (!finder.FindFile(g_hs6210_rollnum_full_path)) {
+			CHgzPath p = g_hs6210_rollnum_full_path;
+			p.CreateDirectory();
+			m_hs6210_rf_addr_table.rollnum = 0;
+			WriteRollnumToRollnumFile_hs6210();
+		}
+		else {
+			CStdioFile f;
+			f.Open(g_hs6210_rollnum_full_path, CFile::modeRead | CFile::typeText);
+			f.ReadString(s);
+			s = s.Mid(s.Find(_T("0x")));
+			m_hs6210_rf_addr_table.rollnum = s.stoul(0, 16);
+			f.Close();
+		}
+		
+		// Read rf syncode and pipe addr, and crc8
+		GetRFAddr5B(m_hs6210_rf_addr_table.rollnum, &m_hs6210_rf_addr_table);
+		
+		return;
+	}
+
+
     for (int i = 0; i < CFG_PARAM_NUM; i++)
         _tcscpy(s_strLineValue[i], _T(""));
 
@@ -637,10 +704,31 @@ void CRollnumAndCPConfigDialog::ConfigFile_Parser(void)
         CheckParameters(m_vTest_OTPWrite, m_ConfigFileCheck);
     }
 
+	SD_FillRollnumRFSynccode();
+
 }
 
 
-void CRollnumAndCPConfigDialog::ConfigFile_LineParser( CString& s, CStdioFile& f )
+bool CRollnumAndCPConfigDialog::WriteRollnumToRollnumFile_hs6210()
+{
+	CString s;
+	s.Format(_T("Next rollnum: 0x%08X(0x%08X)\n"), m_hs6210_rf_addr_table.rollnum, m_hs6210_rf_addr_table.rollnum);
+	CStdioFile f;
+	if (f.Open(g_hs6210_rollnum_full_path, CFile::modeReadWrite | CFile::shareDenyNone | CFile::modeNoTruncate)) {
+		f.SetLength(0);
+		f.WriteString(s);
+		f.Close();
+		return true;
+	}
+	else {
+		s.Format(_T("Warning: Failed to open file: %s.\r\n"), g_hs6210_rollnum_full_path);
+		_tprintf(_T("%s"), s);
+		AfxMessageBox(s);
+		return false;
+	}
+}
+
+void CRollnumAndCPConfigDialog::ConfigFile_LineParser(CString& s, CStdioFile& f)
 {
     // printf("String to parse: %s\r\n", s);
 
@@ -687,24 +775,7 @@ void CRollnumAndCPConfigDialog::UpdateDisplay()
     SetDlgItemText(IDC_CPCONFIGFILE2_CHECK, m_ConfigFileCheck.CP_Config_File2 ? _T("格式与参数检查：√") : _T("格式与参数检查：X"));
     m_color_config2 = m_ConfigFileCheck.CP_Config_File2 ? hgzColor_DarkGreen : hgzColor_Red;
 
-
     UpdateData_To_Ctrol();
-/*
-    m_ctrlEnableOTPWriting.SetWindowText(s_strLineValue[0]);
-    m_cmb_Enable_OTP_writing.SetCurSel(m_vTest_OTPWrite.enableOTPWriting);
-    m_ctrlFirmwareFileToWrite.SetWindowText(s_strLineValue[1]);
-    m_ctrlRFSynccode4BFile.SetWindowText(s_strLineValue[2]);
-    m_ctrlRFSynccode3BFile.SetWindowText(s_strLineValue[3]);
-    m_ctrlRFCommFreq[0].SetWindowText(s_strLineValue[4]);
-    m_ctrlRFCommFreq[1].SetWindowText(s_strLineValue[5]);
-    m_ctrlRFCommFreq[2].SetWindowText(s_strLineValue[6]);
-    m_ctrl_RFFreqGroup.SetCurSel(Get_RF_Freq_Group(m_vTest_OTPWrite.freq[0], m_vTest_OTPWrite.freq[1], m_vTest_OTPWrite.freq[2]));
-    m_ctrlOTPAddrForRollnum.SetWindowText(s_strLineValue[7]);
-    m_ctrlRollnumMin.SetWindowText(s_strLineValue[8]);
-    m_ctrlRollnumMax.SetWindowText(s_strLineValue[9]);
-    m_ctrlNextRollnum.SetWindowText(s_strLineValue[10]);
-    m_ctrlPreviousUpdatedRollnum.SetWindowText(s_strLineValue[11]);
-*/
 
     RedrawWindow();
 }
@@ -747,6 +818,10 @@ void CRollnumAndCPConfigDialog::OnBnClickedButton5()
 
 void CRollnumAndCPConfigDialog::SD_FillRollnumRFSynccode(void)
 {
+	if (g_ChipType == HS__CMD__CHIP_TYPE__OTP__HS6210) {
+		GetRFAddr5B(m_hs6210_rf_addr_table.rollnum, &m_hs6210_rf_addr_table);
+		return;
+	}
     // Fill next Rollnum_Synccode struct: read synccode from synccode files.
     m_vTest_OTPWrite.rsTable.synccode4b = m_ConfigFileCheck.CP_Config_File2 ? SD_GetRFSynccode((CString &)m_CPConfigFilePath+(CString &)s_strConfigFilePath2+m_vTest_OTPWrite.RFSynccode4B, m_vTest_OTPWrite.rsTable.rollnum) : 0;
     m_vTest_OTPWrite.rsTable.synccode3b = m_ConfigFileCheck.CP_Config_File2 ? SD_GetRFSynccode((CString &)m_CPConfigFilePath+(CString &)s_strConfigFilePath2+m_vTest_OTPWrite.RFSynccode3B, m_vTest_OTPWrite.rsTable.rollnum) : 0;
@@ -816,6 +891,9 @@ void CRollnumAndCPConfigDialog::OnBnClickedOk()
 
 bool CRollnumAndCPConfigDialog::IsRollnumValid( void )
 {
+	if (g_ChipType == HS__CMD__CHIP_TYPE__OTP__HS6210)
+		return true;
+
     if (m_vTest_OTPWrite.rsTable.rollnum > m_vTest_OTPWrite.rollnumMax || m_vTest_OTPWrite.rsTable.rollnum < m_vTest_OTPWrite.rollnumMin)
         return false;
     else
@@ -825,6 +903,10 @@ bool CRollnumAndCPConfigDialog::IsRollnumValid( void )
 
 bool CRollnumAndCPConfigDialog::IsRFSyncodeValid( void )
 {
+	if (IsChipType_HS6210()) {
+		return m_hs6210_rf_addr_table.crc8 == crc8(&m_hs6210_rf_addr_table.pipe_addr, 5);
+	}
+
     if (m_vTest_OTPWrite.rsTable.synccode3b == 0 || m_vTest_OTPWrite.rsTable.synccode4b == 0)
         return false;
     else
@@ -834,6 +916,10 @@ bool CRollnumAndCPConfigDialog::IsRFSyncodeValid( void )
 
 bool CRollnumAndCPConfigDialog::WriteRollnumToConfigFile( void )
 {
+	if (g_ChipType == HS__CMD__CHIP_TYPE__OTP__HS6210) {
+		return WriteRollnumToRollnumFile_hs6210();
+	}
+
     printf(m_vTest_OTPWrite.RadixOfNextRollnumInCfgFile==16 ? "Write rollnum to SD: 0x%08X\r\n" : (m_vTest_OTPWrite.RadixOfNextRollnumInCfgFile==10 ? "Write rollnum to SD: %d\r\n" : "Write rollnum to SD: 0%011o\r\n"), m_vTest_OTPWrite.rsTable.rollnum);
 
     CStdioFile CP_Config_File2;

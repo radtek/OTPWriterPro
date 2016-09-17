@@ -285,6 +285,8 @@ void splitfloat(float x, int &intpart, float &fracpart)
 }
 
 
+
+
 int CStringSplit(CStringArray& dest, const CString& source, const CString& divKey)
 {
      dest.RemoveAll();
@@ -363,15 +365,15 @@ unsigned __int64 BinCString2UInt( const CString &s )
 		h += (s[len-1-i] == _T('1')) ? (1<<i) : 0;
 		//_tprintf_s(_T("\n%x"), h);
 	}
+
 	return h;
 }
+
 BOOL hgzOpenConsole()
 {
 	AllocConsole();  
 	_tfreopen(_T("CONOUT$"), _T("w+t"), stdout);  
 	_tfreopen(_T("CONIN$"), _T("r+t"), stdin); 
-
-    //_tprintf(_T("↓ H2D: "));
 
 	return TRUE;
 }
@@ -385,10 +387,9 @@ BOOL hgzCloseConsole()
 	return TRUE;
 }
 
-void hgzRevertByteOrder( UINT8 *addr, UINT bytes )
+void hgzRevertByteOrder( unsigned char *addr, unsigned int bytes )
 {
 	unsigned char x;
-
 	if (bytes < 2) return;
 	for (int i = 0; i < bytes/2; i++) {
 		x = *(addr + i);
@@ -396,7 +397,6 @@ void hgzRevertByteOrder( UINT8 *addr, UINT bytes )
 		*(addr + bytes - 1 - i) = x;
 	}
 }
-
 void hgzRevertByteOrder( UINT8 *out, const UINT8 *in, UINT bytes )
 {
     if (bytes < 2) return;
@@ -405,13 +405,11 @@ void hgzRevertByteOrder( UINT8 *out, const UINT8 *in, UINT bytes )
         out[bytes-1-i] = in[i];
    
 }
-
 unsigned __int32 hgzRevertByteOrder32( unsigned __int32 x )
 {
 	hgzRevertByteOrder((unsigned char *)&x, 4);
 	return x;
 }
-
 unsigned __int16 hgzRevertByteOrder16( unsigned __int16 x )
 {
 	hgzRevertByteOrder((unsigned char *)&x, 2);
@@ -430,6 +428,7 @@ UINT64 hgzMaskBits( UINT64 val, int validBits )
         }
         val &= y;
     }
+
     return val;
 }
 
@@ -538,3 +537,49 @@ extern bool file_exist( const TCHAR *filename )
     return (_taccess(filename, 0) == 0);
 }
 
+
+UINT NewCtrlID(CWnd *pParentWnd)
+{
+	UINT nMaxID = 0;
+	UINT nID = 0;
+	CWnd* pChildWnd = pParentWnd->GetWindow(GW_CHILD);
+	while (pChildWnd)
+	{
+		nID = pChildWnd->GetDlgCtrlID();
+		if (nID > nMaxID)
+			nMaxID = nID;
+		pChildWnd = pChildWnd->GetNextWindow(GW_HWNDNEXT);
+	}
+	nMaxID++;//从这个ID开始使用就可以了
+
+	return nMaxID;
+}
+
+
+// MFC 下获取执行程序所在目录
+CString GetModuleDir()
+{
+	HMODULE module = GetModuleHandle(0);
+	TCHAR pFileName[MAX_PATH];
+	GetModuleFileName(module, pFileName, MAX_PATH);
+
+	CString csFullPath(pFileName);
+	int nPos = csFullPath.ReverseFind(_T('\\'));
+	if (nPos < 0)
+		return CString(_T(""));
+	else
+		return csFullPath.Left(nPos);
+}
+
+//MFC 下获取工作目录
+CString GetWorkDir()
+{
+	TCHAR pFileName[MAX_PATH];
+	int nPos = GetCurrentDirectory(MAX_PATH, pFileName);
+
+	CString csFullPath(pFileName);
+	if (nPos < 0)
+		return CString(_T(""));
+	else
+		return csFullPath;
+}

@@ -14,6 +14,7 @@
 #include "hgz/HgzString.h"
 #include "HgzMD5.h"
 #include "DlgTools.h"
+#include "crc.h"
 
 
 #ifdef _DEBUG
@@ -140,6 +141,7 @@ ON_WM_TIMER()
 ON_BN_CLICKED(IDC_SPLIT3, &COTPWriterProDlg::OnBnClickedButtonFillInBuffer)
 ON_COMMAND(ID_32776, &COTPWriterProDlg::OnBnClickedButtonClearBuffer)
 ON_CBN_SELCHANGE(IDC_COMBO6, &COTPWriterProDlg::OnCbnSelchangeCombo6)
+ON_UPDATE_COMMAND_UI(ID_32772, &COTPWriterProDlg::OnUpdateCommandUi_32772)
 END_MESSAGE_MAP()
 
 
@@ -175,6 +177,8 @@ BOOL COTPWriterProDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
+	GlobalInit();
+
 	CString chipType[] = { _T("None"), _T("HS6206"), _T("HS6210"), _T("EN25T80"), _T("FPGA_HS6206") };
 	for (auto &var : chipType)
 	{
@@ -222,17 +226,6 @@ BOOL COTPWriterProDlg::OnInitDialog()
     m_Option.m_nPacketDataLength = 52;
     if (m_Option.m_bEnableConsoleOutput)	
         hgzOpenConsole();
-    
-    m_ChipType = HS__CMD__CHIP_TYPE__NONE;
-    
-	// Start a periodic read IRP to timely receive datas from device.
-	//SetTimer(1, 1, NULL);
-    //m_bnFind.EnableWindow(FALSE);
-    //m_bnTEST1.EnableWindow(FALSE);
-    //m_bnTEST2.EnableWindow(FALSE);
-    //m_ctrlWrite.EnableWindow(FALSE);
-    //m_ctrlErase.EnableWindow(FALSE);
-    //m_ctrlEncrypt.EnableWindow(FALSE);
     
     GetDlgItem(IDC_BUTTON16)->ShowWindow(SW_HIDE); // hide button "Exit OTP SPI Mode"
     GetDlgItem(IDC_BUTTON17)->ShowWindow(SW_HIDE); // hide button "Enter OTP SPI Mode"
@@ -799,6 +792,110 @@ void COTPWriterProDlg::OnBnClickedButtonWrite()
 {
     PrintCurrentTime();
 
+
+	if (IsChipType_HS6210()) {
+		// check some status to see if it is not ready for writting.
+		// 1. buffer is empty
+		// 2. rollnum enabled but is out of range
+		// 3. rollnum enabled but RF syncode is not correct
+		CString str;
+		str.Empty();
+		if (g_mem.IsEmpty())
+			str.Format(_T("警告！ 缓冲区空，不能烧写。\r\n"));
+		/*else if (m_bRollnumEnable && !m_RollnumAndCPConfigDialog.IsRollnumValid())
+			str.Format(_T("警告！ 滚码超限 [%08X, %08X]： %08X\r\n"), m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rollnumMin, m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rollnumMax, m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.rollnum);
+		else if (m_bRollnumEnable && !m_RollnumAndCPConfigDialog.IsRFSyncodeValid())
+			str.Format(_T("警告！ RF 同步码无效 [4B, 3B]： %08X, %06X\r\n"), m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.RFSynccode4B, m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.RFSynccode3B);
+		*/
+
+		if (!str.IsEmpty())
+		{
+			EditCtrlOutput(0, str);
+			AfxMessageBox(str);
+			m_bOK = false;
+			return;
+		}
+
+		//////////////////////////////////////////////////////////////////////////
+		/*u32 rollnumAddr = m_RollnumAndCPConfigDialog.OTPAddrFor_RF_Addr_5B;
+		u32 rollnumLen = sizeof(m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable);*/
+		u32 startAddr = 0, numBytesToWrite = 0, numBytesWritten = 0;
+		if (m_Option.m_bWriteBufSizeReallyUsed)
+		{
+			startAddr = 0;
+			numBytesToWrite = g_mem.SizeUsed();
+		}
+		else
+		{
+			startAddr = GetStartAddress();
+			numBytesToWrite = GetDataLength();
+		}
+
+		// split OTP writting to 2 steps:
+		// step1: write buffer content, which may be splitted into 2 parts by rollnum region
+		// step2: write rollnum region
+
+		CHgzMem mem;
+		mem.ChipType(g_mem.ChipType());
+		mem.ClearBufAll();
+		memcpy(mem.GetBuf(), g_mem.GetBuf(), g_mem.SizeUsed());
+		memcpy(mem.GetBufFlag(), g_mem.GetBufFlag(), g_mem.SizeUsed());
+		mem.SizeUsed(g_mem.SizeUsed());
+
+		if (m_bRollnumEnable) { // clear rollnum region before write to OTP
+			FillIntersectionOfBuffer(mem.GetBuf() + startAddr, startAddr, numBytesToWrite, m_RollnumAndCPConfigDialog.OTPAddrFor_RF_Addr_CRC8, 1, 0xFF);
+			FillIntersectionOfBuffer(mem.GetBuf() + startAddr, startAddr, numBytesToWrite, m_RollnumAndCPConfigDialog.OTPAddrFor_RF_Addr_5B, 5, 0xFF);
+		}
+		EditCtrlOutput(0, _T("需要写入字节数：%d\r\n"), numBytesToWrite);
+		numBytesWritten = mem.Write(startAddr, numBytesToWrite);
+		m_bOK = (numBytesWritten == numBytesToWrite);
+		PrintCurrentTime();
+		EditCtrlOutput(0, _T("实际写入字节数：%d，%s\r\n"), numBytesWritten, m_bOK ? _T("成功！") : _T("失败！"));
+
+		if (m_bRollnumEnable && m_bOK)
+		{
+			mem.WriteBuf(m_RollnumAndCPConfigDialog.OTPAddrFor_RF_Addr_CRC8, (UINT8 *)&m_RollnumAndCPConfigDialog.m_hs6210_rf_addr_table.crc8, 1);
+			mem.WriteBuf(m_RollnumAndCPConfigDialog.OTPAddrFor_RF_Addr_5B, (UINT8 *)&m_RollnumAndCPConfigDialog.m_hs6210_rf_addr_table.pipe_addr, 5);
+
+			// display rollnumRFSynccode in OUTPUT
+			PrintCurrentTime(); EditCtrlOutput(0, _T("需要写入字节数：%d\r\n"), 1+5);
+			PrintCurrentTime(); EditCtrlOutput(0, _T("(滚码=0x%08X) RF_Addr_5B=0x%08X%02X, RF_Addr_CRC8=0x%02X\r\n"),
+				m_RollnumAndCPConfigDialog.m_hs6210_rf_addr_table.rollnum,
+				m_RollnumAndCPConfigDialog.m_hs6210_rf_addr_table.sync_code_4b, m_RollnumAndCPConfigDialog.m_hs6210_rf_addr_table.pipe_addr,
+				m_RollnumAndCPConfigDialog.m_hs6210_rf_addr_table.crc8);
+
+			// Write rollnum
+			numBytesWritten = mem.Write(m_RollnumAndCPConfigDialog.OTPAddrFor_RF_Addr_CRC8, 1);
+			numBytesWritten += mem.Write(m_RollnumAndCPConfigDialog.OTPAddrFor_RF_Addr_5B, 5);
+			m_bOK = (numBytesWritten == (1+5));
+			PrintCurrentTime(); EditCtrlOutput(0, _T("实际写入字节数：%d，%s\r\n"), numBytesWritten, m_bOK ? _T("成功！") : _T("失败！"));
+
+			if (m_bOK)
+			{
+				// fill written rollnum to buffer's rollnum region.
+				g_mem.WriteBuf(m_RollnumAndCPConfigDialog.OTPAddrFor_RF_Addr_CRC8, (UINT8 *)&m_RollnumAndCPConfigDialog.m_hs6210_rf_addr_table.crc8, 1);
+				g_mem.WriteBuf(m_RollnumAndCPConfigDialog.OTPAddrFor_RF_Addr_5B, (UINT8 *)&m_RollnumAndCPConfigDialog.m_hs6210_rf_addr_table.pipe_addr, 5);
+				UpdateBufferDisplay(m_RollnumAndCPConfigDialog.OTPAddrFor_RF_Addr_CRC8, 1);
+				UpdateBufferDisplay(m_RollnumAndCPConfigDialog.OTPAddrFor_RF_Addr_5B, 5);
+
+				// rollnum++, and judge if it is still in rollnum range
+				m_RollnumAndCPConfigDialog.m_hs6210_rf_addr_table.rollnum++;
+				IsRollnumValid();
+
+				// write new rollnum to config file
+				m_RollnumAndCPConfigDialog.WriteRollnumToConfigFile();
+
+				// fill RollnumRegionForWrite with new rollnum and RF synccodes
+				ProcessRollnum();
+			}
+		}
+
+		if (m_Option.m_bWriteBufSizeReallyUsed)
+			m_ctrlDataLength.SetWindowsTextFormat(m_chkDataLen.GetCheck() ? _T("%X") : _T("%d"), g_mem.SizeUsed());
+
+		return;
+	}
+	
     // check some status to see if it is not ready for writting.
     // 1. buffer is empty
     // 2. rollnum enabled but is out of range
@@ -922,6 +1019,21 @@ void COTPWriterProDlg::OnBnClickedButtonVerify()
     EditCtrlOutput(-7, m_bOK ? _T("校验成功！\r\n") : _T("校验失败！\r\n"));
 
     // verify rollnum
+	if (IsChipType_HS6210()) {
+		if (m_bOK && m_bRollnumEnable)
+		{
+			u32 rollnumAddr = m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.OTPAddrForRollnum;
+			u32 rollnumLen = sizeof(m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable);
+
+			PrintCurrentTime(); EditCtrlOutput(0, _T("滚码校验 ... "));
+			m_bOK = (m_ctrlIgnoreMem.GetCheck() ? g_mem.VerifyEx(m_RollnumAndCPConfigDialog.OTPAddrFor_RF_Addr_CRC8, 1, GetStartIgnoreAddress(), GetEndIgnoreAddress()) : g_mem.Verify(m_RollnumAndCPConfigDialog.OTPAddrFor_RF_Addr_CRC8, 1))
+			     && (m_ctrlIgnoreMem.GetCheck() ? g_mem.VerifyEx(m_RollnumAndCPConfigDialog.OTPAddrFor_RF_Addr_5B, 5, GetStartIgnoreAddress(), GetEndIgnoreAddress()) : g_mem.Verify(m_RollnumAndCPConfigDialog.OTPAddrFor_RF_Addr_5B, 5));
+			EditCtrlOutput(-7, m_bOK ? _T("校验成功！\r\n") : _T("校验失败！\r\n"));
+		}
+
+		return;
+	}
+
     if (m_bOK && m_bRollnumEnable)
     {
         u32 rollnumAddr = m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.OTPAddrForRollnum;
@@ -1181,35 +1293,41 @@ void COTPWriterProDlg::OnCbnSelchangeComboSelectChipType()
     m_ctrlChipSel.GetLBText(m_ctrlChipSel.GetCurSel(), s);
     
     if (s.IsEmpty())
-        m_ChipType = HS__CMD__CHIP_TYPE__NONE;
+        g_ChipType = HS__CMD__CHIP_TYPE__NONE;
     else if (s.Compare(_T("HS6206")) == 0)
-        m_ChipType = HS__CMD__CHIP_TYPE__OTP__HS6206;
+        g_ChipType = HS__CMD__CHIP_TYPE__OTP__HS6206;
 	else if (s.Compare(_T("EN25T80")) == 0)
-		m_ChipType = HS__CMD__CHIP_TYPE__FLASH__EN25T80;
+		g_ChipType = HS__CMD__CHIP_TYPE__FLASH__EN25T80;
 	else if (s.Compare(_T("FPGA_HS6206")) == 0)// HS__CMD__CHIP_TYPE__FPGA__HS6206 is not used in downstream machine. This type is used only by upper-stream machine to implement different Auto functions.
-		m_ChipType = HS__CMD__CHIP_TYPE__OTP__HS6206;
+		g_ChipType = HS__CMD__CHIP_TYPE__OTP__HS6206;
 	else if (s.Compare(_T("HS6210")) == 0)
 	{
-		m_ChipType = HS__CMD__CHIP_TYPE__OTP__HS6210;
+		g_ChipType = HS__CMD__CHIP_TYPE__OTP__HS6210;
 		m_chkDataLen.SetCheck(FALSE);
 		m_ctrlMemAddrBegin.SetWindowText(_T("0000"));
 		m_ctrlDataLength.SetWindowText(_T("128"));
 	}
 	else
-        m_ChipType = HS__CMD__CHIP_TYPE__NONE;
+        g_ChipType = HS__CMD__CHIP_TYPE__NONE;
 
-    HS_CHIP_TYPE_t chipType = m_ChipType;
+    HS_CHIP_TYPE_t chipType = g_ChipType;
     CString str(_T("设定芯片型号: "));
     str += s;
-    if (g_mem.SetChipType(&chipType) && chipType == m_ChipType)
+    if (g_mem.SetChipType(&chipType) && chipType == g_ChipType)
         str += _T(" -- 成功！\r\n");
     else
         str += _T(" -- 失败！\r\n");
 
     EditCtrlOutput(0, str.GetString());
 
-	if (m_ChipType == HS__CMD__CHIP_TYPE__OTP__HS6210)
+	if (g_ChipType == HS__CMD__CHIP_TYPE__OTP__HS6210) {
 		OnBnClickedButtonReadChipID();
+	}
+	g_mem.ChipType(g_ChipType);
+
+	ProcessRollnum();
+
+	FillRollnumRegionForWrite();
 }
 
 
@@ -1217,7 +1335,7 @@ void COTPWriterProDlg::OnBnClickedButtonDetectChipType()
 {
     PrintCurrentTime();
 
-    HS_CHIP_TYPE_t chipType = m_ChipType;
+    HS_CHIP_TYPE_t chipType = g_ChipType;
     BOOL bRes = g_mem.DetectChipType(&chipType);
     if ( bRes && chipType!=HS__CMD__CHIP_TYPE__NONE )
     {
@@ -1422,22 +1540,57 @@ LocalExit:
 
 void COTPWriterProDlg::FillRollnumRegionForWrite(void)
 {
-    CString s;
-    s.Format(_T("%08X"), m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.rollnum);
-    GetDlgItem(IDC_EDIT3)->SetWindowText(s);
-    s.Format(_T("%08X"), m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.synccode4b);
-    GetDlgItem(IDC_EDIT10)->SetWindowText(s);
-    s.Format(_T("%06X"), m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.synccode3b);
-    GetDlgItem(IDC_EDIT11)->SetWindowText(s);
-    s.Format(_T("%010X"), m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.reserved);
-    GetDlgItem(IDC_EDIT12)->SetWindowText(s);
+	if (g_ChipType == HS__CMD__CHIP_TYPE__OTP__HS6210) {
+		CString s;
+		s.Format(_T("RF_Addr_5B"));
+		GetDlgItem(IDC_STATIC_RF_ADDR)->SetWindowText(s);
+		s.Format(_T("CRC8"));
+		GetDlgItem(IDC_STATIC_RF_CRC8)->SetWindowText(s);
+		GetDlgItem(IDC_STATIC_RF_ADDR_RESERVE)->ShowWindow(FALSE);
+		GetDlgItem(IDC_EDIT12)->ShowWindow(FALSE);
+		
+		s.Format(_T("%08X"), m_RollnumAndCPConfigDialog.m_hs6210_rf_addr_table.rollnum);
+		GetDlgItem(IDC_EDIT3)->SetWindowText(s);
+		s.Format(_T("%08X%02X"), m_RollnumAndCPConfigDialog.m_hs6210_rf_addr_table.sync_code_4b, m_RollnumAndCPConfigDialog.m_hs6210_rf_addr_table.pipe_addr);
+		GetDlgItem(IDC_EDIT10)->SetWindowText(s);
+		s.Format(_T("%02X"), m_RollnumAndCPConfigDialog.m_hs6210_rf_addr_table.crc8);
+		GetDlgItem(IDC_EDIT11)->SetWindowText(s);
 
-    if (!m_RollnumAndCPConfigDialog.IsRollnumValid() || !m_RollnumAndCPConfigDialog.IsRFSyncodeValid())
-    {
-        m_bRollnumEnable = FALSE;
-		AfxGetApp()->WriteProfileInt(_T("Settings"), _T("EnableRollnum"), m_bRollnumEnable);
-        m_bRollnumEnable ? m_ctrlRollnum.SetWindowText(_T(" 滚码烧录 [√]")) : m_ctrlRollnum.SetWindowText(_T(" 滚码烧录 [  ]"));
-    }
+		if (!m_RollnumAndCPConfigDialog.IsRFSyncodeValid())
+		{
+			m_bRollnumEnable = FALSE;
+			AfxGetApp()->WriteProfileInt(_T("Settings"), _T("EnableRollnum"), m_bRollnumEnable);
+			m_bRollnumEnable ? m_ctrlRollnum.SetWindowText(_T(" 滚码烧录 [√]")) : m_ctrlRollnum.SetWindowText(_T(" 滚码烧录 [  ]"));
+		}
+
+	}
+	else {
+		CString s;
+		s.Format(_T("RF同步码4B"));
+		GetDlgItem(IDC_STATIC_RF_ADDR)->SetWindowText(s);
+		s.Format(_T("RF同步码3B"));
+		GetDlgItem(IDC_STATIC_RF_CRC8)->SetWindowText(s);
+		GetDlgItem(IDC_STATIC_RF_ADDR_RESERVE)->ShowWindow(TRUE);
+		GetDlgItem(IDC_EDIT12)->ShowWindow(TRUE);
+
+		s.Format(_T("%08X"), m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.rollnum);
+		GetDlgItem(IDC_EDIT3)->SetWindowText(s);
+		s.Format(_T("%08X"), m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.synccode4b);
+		GetDlgItem(IDC_EDIT10)->SetWindowText(s);
+		s.Format(_T("%06X"), m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.synccode3b);
+		GetDlgItem(IDC_EDIT11)->SetWindowText(s);
+		s.Format(_T("%010X"), m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.reserved);
+		GetDlgItem(IDC_EDIT12)->SetWindowText(s);
+
+		if (!m_RollnumAndCPConfigDialog.IsRollnumValid() || !m_RollnumAndCPConfigDialog.IsRFSyncodeValid())
+		{
+			m_bRollnumEnable = FALSE;
+			AfxGetApp()->WriteProfileInt(_T("Settings"), _T("EnableRollnum"), m_bRollnumEnable);
+			m_bRollnumEnable ? m_ctrlRollnum.SetWindowText(_T(" 滚码烧录 [√]")) : m_ctrlRollnum.SetWindowText(_T(" 滚码烧录 [  ]"));
+		}
+
+	}
+
 }
 
 
@@ -1493,10 +1646,18 @@ void COTPWriterProDlg::OnCancel()
 
 void COTPWriterProDlg::AdjustRollnumForWrite( INT32 iDelta )
 {
-    CHgzString s;
-    GetDlgItem(IDC_EDIT3)->GetWindowText(s);
-    m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.rollnum = s.stoul(0, 16);
-    m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.rollnum += iDelta;
+	if (g_ChipType == HS__CMD__CHIP_TYPE__OTP__HS6210) {
+		CHgzString s;
+		GetDlgItem(IDC_EDIT3)->GetWindowText(s);
+		m_RollnumAndCPConfigDialog.m_hs6210_rf_addr_table.rollnum = s.stoul(0, 16);
+		m_RollnumAndCPConfigDialog.m_hs6210_rf_addr_table.rollnum += iDelta;
+	}
+	else {
+		CHgzString s;
+		GetDlgItem(IDC_EDIT3)->GetWindowText(s);
+		m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.rollnum = s.stoul(0, 16);
+		m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable.rollnum += iDelta;
+	}
 
     if (IsRollnumValid() && m_bRollnumEnable)
         m_RollnumAndCPConfigDialog.WriteRollnumToConfigFile();
@@ -1594,39 +1755,42 @@ void COTPWriterProDlg::OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSys
 
 void COTPWriterProDlg::ProcessRollnum()
 {
+	static bool bRollnumEnable = false;
     m_bRollnumEnable ? m_ctrlRollnum.SetWindowText(_T(" 滚码烧录 [√]")) : m_ctrlRollnum.SetWindowText(_T(" 滚码烧录 [  ]"));
 
-    if (!m_bRollnumEnable)
+    if (!m_bRollnumEnable && bRollnumEnable)
     {
+		bRollnumEnable = false;
         if (AfxMessageBox(_T("是否清空缓冲区内的滚码区数据？"), MB_YESNO) == IDYES)
         {
-            u32 rollnumAddr = m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.OTPAddrForRollnum;
-            u32 rollnumLen = sizeof(m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable);
+			u32 sz = g_mem.SizeUsed();
+			if (g_ChipType == HS__CMD__CHIP_TYPE__OTP__HS6210) {
+				g_mem.FillBuf(CRollnumAndCPConfigDialog::OTPAddrFor_RF_Addr_CRC8, 0xFF, 1);
+				g_mem.FillBuf(CRollnumAndCPConfigDialog::OTPAddrFor_RF_Addr_5B, 0xFF, 5);
+				g_mem.SizeUsed(sz); // do not change g_mem's size of used.
+				UpdateBufferDisplay(CRollnumAndCPConfigDialog::OTPAddrFor_RF_Addr_CRC8, 1);
+				UpdateBufferDisplay(CRollnumAndCPConfigDialog::OTPAddrFor_RF_Addr_5B, 5);
+			}
+			else {
 
-            u32 sz = g_mem.SizeUsed();
-            g_mem.FillBuf(rollnumAddr, 0, rollnumLen);
-            g_mem.SizeUsed(sz); // do not change g_mem's size of used.
-            UpdateBufferDisplay(rollnumAddr, rollnumLen);
+				u32 rollnumAddr = m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.OTPAddrForRollnum;
+				u32 rollnumLen = sizeof(m_RollnumAndCPConfigDialog.m_vTest_OTPWrite.rsTable);
+				g_mem.FillBuf(rollnumAddr, 0, rollnumLen);
+				g_mem.SizeUsed(sz); // do not change g_mem's size of used.
+				UpdateBufferDisplay(rollnumAddr, rollnumLen);
+			}
             PrintCurrentTime();
-            EditCtrlOutput(0, _T("将缓冲区内的滚码区数据清空为 0x00。\r\n"));
+            EditCtrlOutput(0, _T("将缓冲区内的滚码区数据清空。\r\n"));
         }
 
         return;
     }
+	bRollnumEnable = m_bRollnumEnable;
 
     // 1. Parse config file.
     m_RollnumAndCPConfigDialog.ConfigFile_Parser();
 
-    if (!m_RollnumAndCPConfigDialog.m_ConfigFileCheck.CP_Config_File1 && !m_RollnumAndCPConfigDialog.m_ConfigFileCheck.CP_Config_File2)
-    {
-        PrintCurrentTime();
-        EditCtrlOutput(0, _T("滚码与CP测试配置文件路径错误，请重新配置。\r\n"));
-    }
-
-    // 2. Fill rollnumRFSynccode struct
-    m_RollnumAndCPConfigDialog.SD_FillRollnumRFSynccode();
-
-    // 3. Fill rollnum region for Write
+    // 2. Fill rollnum region for Write
     FillRollnumRegionForWrite();
 }
 
@@ -1790,4 +1954,11 @@ void COTPWriterProDlg::OnBnClickedButtonClearBuffer()
 void COTPWriterProDlg::OnCbnSelchangeCombo6()
 {
     SetTimer(2, 10, NULL);
+}
+
+
+void COTPWriterProDlg::OnUpdateCommandUi_32772(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	pCmdUI->Enable(g_ChipType != HS__CMD__CHIP_TYPE__OTP__HS6210);
 }

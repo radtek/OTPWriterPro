@@ -98,8 +98,6 @@ public:
     CButton m_chkFillBufferAll;
     CButton m_chkDataLen;
 
-    HS_CHIP_TYPE_t m_ChipType;
-
     COption m_Option;
 
     afx_msg void OnBnClickedButtonOpenFile();
@@ -194,6 +192,7 @@ public:
     CSplitButton m_sbn_Fill;
     afx_msg void OnBnClickedButtonClearBuffer();
     afx_msg void OnCbnSelchangeCombo6();
+	afx_msg void OnUpdateCommandUi_32772(CCmdUI *pCmdUI);
 };
 
 

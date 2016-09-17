@@ -4,6 +4,7 @@
 #include "HgzMD5.h"
 #include "afxcmn.h"
 //#include "uxtheme.h"
+#include "crc.h"
 
 void print(int pos, const TCHAR *szFormat, ...);
 
@@ -37,6 +38,14 @@ public:
     static const u32 NULL_NUM = 0xFFFFFFFFUL;
     enum {
         CFG_PARAM_NUM             = 12,
+
+		RF_TOTAL_SYNCCODE_FILES = 272,
+		RF_LINES_PER_SYNCCODE_FILE = 100 * 1000,
+		RF_TOTAL_SYNCCODES = RF_TOTAL_SYNCCODE_FILES * RF_LINES_PER_SYNCCODE_FILE,
+
+		OTPAddrFor_RF_Addr_CRC8 = 0x77,
+		OTPAddrFor_RF_Addr_5B = 0x7A,
+
     };
 
     typedef struct
@@ -47,6 +56,18 @@ public:
         u32 reserved;
     } ROLLNUM_RFSynccode_TABLE_t;
 
+	#pragma push
+	#pragma pack(1)
+	typedef struct
+	{
+		u32 rollnum;
+		u8 crc8;
+		u8 pipe_addr;
+		u32 sync_code_4b;
+	} ROLLNUM_RFAddr_TABLE_t;
+	ROLLNUM_RFAddr_TABLE_t m_hs6210_rf_addr_table;
+	#pragma pop
+	bool GetRFAddr5B(u32 rollnum, ROLLNUM_RFAddr_TABLE_t *rf_addr_tb);
 
     typedef struct 
     {
@@ -122,9 +143,11 @@ public:
     void UpdateDisplay();
 
     CHgzComboBox m_ctrlEnableOTPWriting;
-    CEdit m_ctrlFirmwareFileToWrite;
-    afx_msg void OnBnClickedButton3();
+	CEdit m_ctrlFirmwareFileToWrite;
+	afx_msg void OnBnClickedButton3();
     void ConfigFile_Parser(void);
+
+	bool WriteRollnumToRollnumFile_hs6210();
 
     void Convert_Parameters(TEST_OTPWRITE_t &cfg);
 
