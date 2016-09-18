@@ -1319,11 +1319,15 @@ void COTPWriterProDlg::OnCbnSelchangeComboSelectChipType()
         str += _T(" -- Ê§°Ü£¡\r\n");
 
     EditCtrlOutput(0, str.GetString());
+	g_mem.ChipType(g_ChipType);
 
 	if (g_ChipType == HS__CMD__CHIP_TYPE__OTP__HS6210) {
 		OnBnClickedButtonReadChipID();
 	}
-	g_mem.ChipType(g_ChipType);
+	GetDlgItem(IDC_BUTTON12)->EnableWindow(g_ChipType == HS__CMD__CHIP_TYPE__OTP__HS6206);
+	GetDlgItem(IDC_BUTTON13)->EnableWindow(g_ChipType == HS__CMD__CHIP_TYPE__OTP__HS6206);
+	GetDlgItem(IDC_BUTTON14)->EnableWindow(g_ChipType == HS__CMD__CHIP_TYPE__OTP__HS6206);
+	GetDlgItem(IDC_BUTTON15)->EnableWindow(g_ChipType == HS__CMD__CHIP_TYPE__OTP__HS6206);
 
 	ProcessRollnum();
 

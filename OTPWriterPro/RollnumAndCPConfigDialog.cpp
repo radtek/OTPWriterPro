@@ -533,7 +533,7 @@ void CRollnumAndCPConfigDialog::ConfigFile_Parser(void)
 		// Check existense of files.
 		CFileFind finder;
 		if (!finder.FindFile(g_hs6210_rf_syncode_full_path)) {
-			s.Format(_T("\r\nThere's no RF Synccode file. \r\nPlace files: \"AddrMode1-150302-2013-repeat-f000.txt\" - \"AddrMode1-150302-2013-repeat-f271.txt\"\r\n under current executive directory: \r\n%s\r\n"), g_hs6210_rf_syncode_full_path);
+			s.Format(_T("\r\nThere's no RF Synccode file. \r\nPlease copy files: \"AddrMode1-150302-2013-repeat-f000.txt\" - \"AddrMode1-150302-2013-repeat-f271.txt\"\r\n to directory: \r\n%s\r\n"), CHgzPath(g_hs6210_rf_syncode_full_path).GetFullDir());
 			print(0, s);
 			return;
 		}
