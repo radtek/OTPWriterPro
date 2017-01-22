@@ -123,7 +123,7 @@ public:
     ATL::CPath m_CPConfigFilePath;
     static const ATL::CPath s_strConfigFilePath1;
     static const ATL::CPath s_strConfigFilePath2;
-    static const ATL::CPath s_strHashFilePath;
+    //static const ATL::CPath s_strHashFilePath;
     static const ATL::CPath s_strConfigFileName1;
     static const ATL::CPath s_strConfigFileName2;
     static const TCHAR s_strLinePrefix[][50];
@@ -207,4 +207,8 @@ public:
 
 	afx_msg void OnEnSetfocusEdit13();
 	afx_msg void OnEnKillfocusEditCpconfigfilepath();
+protected:
+	afx_msg LRESULT OnUserUpdateProgress(WPARAM wParam, LPARAM lParam);
+public:
+	static UINT rf_synccode_file_md5_process(LPVOID pParam);
 };

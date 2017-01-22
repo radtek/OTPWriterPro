@@ -13,7 +13,7 @@
 
 const ATL::CPath CRollnumAndCPConfigDialog::s_strConfigFilePath1 = _T("\\");
 const ATL::CPath CRollnumAndCPConfigDialog::s_strConfigFilePath2 = _T("\\SiteInfo\\");
-const ATL::CPath CRollnumAndCPConfigDialog::s_strHashFilePath = _T("\\Hash\\");
+//const ATL::CPath CRollnumAndCPConfigDialog::s_strHashFilePath = _T("\\Hash\\");
 const ATL::CPath CRollnumAndCPConfigDialog::s_strConfigFileName1 = _T("CP_Config_File1.txt");
 const ATL::CPath CRollnumAndCPConfigDialog::s_strConfigFileName2 = _T("CP_Config_File2.txt");
 
@@ -106,6 +106,7 @@ BEGIN_MESSAGE_MAP(CRollnumAndCPConfigDialog, CDialogEx)
     ON_CBN_SELCHANGE(IDC_COMBO1, &CRollnumAndCPConfigDialog::OnCbnSelchangeCombo1)
 	ON_EN_SETFOCUS(IDC_EDIT13, &CRollnumAndCPConfigDialog::OnEnSetfocusEdit13)
 	ON_EN_KILLFOCUS(IDC_EDIT_CPConfigFilePath, &CRollnumAndCPConfigDialog::OnEnKillfocusEditCpconfigfilepath)
+	ON_MESSAGE(WM_USER_UPDATE_PROGRESS, &CRollnumAndCPConfigDialog::OnUserUpdateProgress)
 END_MESSAGE_MAP()
 
 
@@ -154,6 +155,7 @@ void CRollnumAndCPConfigDialog::OnBnClickedButton_SelectConfigFilePath()
         AfxGetApp()->WriteProfileString(_T("Settings"), _T("CPConfigFilePath"), m_CPConfigFilePath);
 
     SetDlgItemText(IDC_EDIT_CPConfigFilePath, m_CPConfigFilePath);
+	OnBnClickedButton_ParseConfigFile();
 }
 
 void CRollnumAndCPConfigDialog::OnBnClickedButton_ParseConfigFile()
@@ -268,49 +270,70 @@ void CRollnumAndCPConfigDialog::OnBnClickedButton_GenerateHashFiles()
 {
     // Generate MD5 file in subdirectory "Hash"
     CHgzMD5 md5;
-    CString s, sfn1, sfn2, sfn3;
-    ATL::CPath path1;
-    
-    sfn1 = (CString &)m_CPConfigFilePath + (CString &)s_strHashFilePath;
+
+	/*CString s, sfn1, sfn2, sfn3;
+	ATL::CPath path1;
+	sfn1 = (CString &)m_CPConfigFilePath + (CString &)s_strHashFilePath;*/
     
     // 1. CP_Config_File1.md5
     if (m_chk_En_CP_Config_File1_Hash.GetCheck())
     {
-        m_ConfigFileCheck.CP_Config_File1_Hash = true;
+        /*m_ConfigFileCheck.CP_Config_File1_Hash = true;
         sfn2 = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath1 + (CString &)s_strConfigFileName1;
         path1 = s_strConfigFileName1;
         path1.RenameExtension(_T(".md5"));
         sfn3 = sfn1 + (CString &)path1;
-        md5.md5txt(sfn2, &sfn3, false, (CStatic *)&m_chk_En_CP_Config_File1_Hash);
+        md5.md5txt(sfn2, &sfn3, false, (CStatic *)&m_chk_En_CP_Config_File1_Hash);*/
+
+		m_ConfigFileCheck.CP_Config_File1_Hash = true;
+		CHgzPath originalFilePath = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath1 + (CString &)s_strConfigFileName1;
+		CHgzPath md5FilePath = originalFilePath;
+		md5FilePath.ChangeFileExt(_T(".md5"));
+		md5.md5txt(originalFilePath.GetFullPath(), &md5FilePath.GetFullPath(), false, (CStatic *)&m_chk_En_CP_Config_File1_Hash);
+		
     }
 
     // 2. Firmware.md5
     if (m_chk_En_FirmwareToWrite_Hash.GetCheck())
     {
-        m_ConfigFileCheck.Program_File_Hash = true;
+        /*m_ConfigFileCheck.Program_File_Hash = true;
         m_ctrlFirmwareFileToWrite.GetWindowText(s);
         sfn2 = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath1 + s;
         path1 = ATL::CPath(s);
         path1.RenameExtension(_T(".md5"));
         sfn3 = sfn1 + (CString &)path1;
-        md5.md5bin(sfn2, &sfn3, 256, (CStatic *)&m_chk_En_FirmwareToWrite_Hash);
+        md5.md5bin(sfn2, &sfn3, 256, (CStatic *)&m_chk_En_FirmwareToWrite_Hash);*/
+
+		m_ConfigFileCheck.Program_File_Hash = true;
+		CString s;
+		m_ctrlFirmwareFileToWrite.GetWindowText(s);
+		CHgzPath originalFilePath = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath1 + s;
+		CHgzPath md5FilePath = originalFilePath;
+		md5FilePath.ChangeFileExt(_T(".md5"));
+		md5.md5bin(originalFilePath.GetFullPath(), &md5FilePath.GetFullPath(), 256, (CStatic *)&m_chk_En_FirmwareToWrite_Hash);
     }
 
     // 3. CP_Config.File2.md5
     if (m_chk_En_CP_Config_File2_Hash.GetCheck())
     {
-        m_ConfigFileCheck.CP_Config_File2_Hash = true;
-        sfn2 = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath2 + (CString &)s_strConfigFileName2;
-        path1 = s_strConfigFileName2;
-        path1.RenameExtension(_T(".md5"));
-        sfn3 = sfn1 + (CString &)path1;
-        md5.md5txt(sfn2, &sfn3, false, (CStatic *)&m_chk_En_CP_Config_File2_Hash);
+		/*m_ConfigFileCheck.CP_Config_File2_Hash = true;
+		sfn2 = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath2 + (CString &)s_strConfigFileName2;
+		path1 = s_strConfigFileName2;
+		path1.RenameExtension(_T(".md5"));
+		sfn3 = sfn1 + (CString &)path1;
+		md5.md5txt(sfn2, &sfn3, false, (CStatic *)&m_chk_En_CP_Config_File2_Hash);*/
+
+		m_ConfigFileCheck.CP_Config_File2_Hash = true;
+		CHgzPath originalFilePath = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath2 + (CString &)s_strConfigFileName2;
+		CHgzPath md5FilePath = originalFilePath;
+		md5FilePath.ChangeFileExt(_T(".md5"));
+		md5.md5txt(originalFilePath.GetFullPath(), &md5FilePath.GetFullPath(), false, (CStatic *)&m_chk_En_CP_Config_File2_Hash);
     }
 
     // 4. 4_bytes_RF_synccode_file.md5
     if (m_chk_En_RFSynFile4B_Hash.GetCheck())
     {
-        m_ConfigFileCheck.RFSynccode4B_Hash = true;
+        /*m_ConfigFileCheck.RFSynccode4B_Hash = true;
         m_ctrlRFSynccode4BFile.GetWindowText(s);
         sfn2 = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath2 + s;
         path1 = ATL::CPath(s);
@@ -321,13 +344,28 @@ void CRollnumAndCPConfigDialog::OnBnClickedButton_GenerateHashFiles()
             m_ConfigFileCheck.RFSynccode4B_Hash = false;
         }
         else
-            md5.md5txt(sfn2, &sfn3, false, (CStatic *)&m_chk_En_RFSynFile4B_Hash);
+            md5.md5txt(sfn2, &sfn3, false, (CStatic *)&m_chk_En_RFSynFile4B_Hash);*/
+
+
+		
+		CString s;
+		m_ConfigFileCheck.RFSynccode4B_Hash = true;
+		m_ctrlRFSynccode4BFile.GetWindowText(s);
+		CHgzPath originalFilePath = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath2 + s;
+		CHgzPath md5FilePath = originalFilePath;
+		md5FilePath.ChangeFileExt(_T(".md5"));
+		if (!CheckRFSyncFile(originalFilePath.GetFullPath(), 4, (CStatic *)&m_chk_En_RFSynFile4B_Hash))
+		{
+			m_ConfigFileCheck.RFSynccode4B_Hash = false;
+		}
+		else
+			md5.md5txt(originalFilePath.GetFullPath(), &md5FilePath.GetFullPath(), false, (CStatic *)&m_chk_En_RFSynFile4B_Hash);
     }
 
     // 5. 3_bytes_RF_synccode_file.md5
     if (m_chk_En_RFSynFile3B_Hash.GetCheck())
     {
-        m_ConfigFileCheck.RFSynccode3B_Hash = true;
+        /*m_ConfigFileCheck.RFSynccode3B_Hash = true;
         m_ctrlRFSynccode3BFile.GetWindowText(s);
         sfn2 = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath2 + s;
         path1 = ATL::CPath(s);
@@ -338,7 +376,21 @@ void CRollnumAndCPConfigDialog::OnBnClickedButton_GenerateHashFiles()
             m_ConfigFileCheck.RFSynccode3B_Hash = false;
         }
         else
-            md5.md5txt(sfn2, &sfn3, false, (CStatic *)&m_chk_En_RFSynFile3B_Hash);
+            md5.md5txt(sfn2, &sfn3, false, (CStatic *)&m_chk_En_RFSynFile3B_Hash);*/
+
+
+		CString s;
+		m_ConfigFileCheck.RFSynccode3B_Hash = true;
+		m_ctrlRFSynccode3BFile.GetWindowText(s);
+		CHgzPath originalFilePath = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath2 + s;
+		CHgzPath md5FilePath = originalFilePath;
+		md5FilePath.ChangeFileExt(_T(".md5"));
+		if (!CheckRFSyncFile(originalFilePath.GetFullPath(), 3, (CStatic *)&m_chk_En_RFSynFile3B_Hash))
+		{
+			m_ConfigFileCheck.RFSynccode3B_Hash = false;
+		}
+		else
+			md5.md5txt(originalFilePath.GetFullPath(), &md5FilePath.GetFullPath(), false, (CStatic *)&m_chk_En_RFSynFile3B_Hash);
     }
 
     RedrawWindow();
@@ -348,29 +400,39 @@ void CRollnumAndCPConfigDialog::OnBnClickedButton_VerifyHashFiles()
 {
     // Verify MD5 file in subdirectory "Hash"
     CHgzMD5 md5;
-    CString s, sfn1, sfn2, sfn3;
-    ATL::CPath path1;
 
-    sfn1 = (CString &)m_CPConfigFilePath + (CString &)s_strHashFilePath;
+	//CString s, sfn1, sfn2, sfn3;
+    //ATL::CPath path1;
+    //sfn1 = (CString &)m_CPConfigFilePath + (CString &)s_strHashFilePath;
 
     // 1. CP_Config_File1.md5
     if (m_chk_En_CP_Config_File1_Hash.GetCheck())
     {
-        sfn2 = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath1 + (CString &)s_strConfigFileName1;
+		/*
+		sfn2 = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath1 + (CString &)s_strConfigFileName1;
         path1 = s_strConfigFileName1;
         path1.RenameExtension(_T(".md5"));
         sfn3 = sfn1 + (CString &)path1;
-        if (md5.md5txt(sfn2, &sfn3, false, (CStatic *)&m_chk_En_CP_Config_File1_Hash, true))
+		if (md5.md5txt(sfn2, &sfn3, false, (CStatic *)&m_chk_En_CP_Config_File1_Hash, true))
+			m_ConfigFileCheck.CP_Config_File1_Hash = true;
+		else
+			m_ConfigFileCheck.CP_Config_File1_Hash = false;
+		*/
+
+		CHgzPath originalFilePath = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath1 + (CString &)s_strConfigFileName1;
+		CHgzPath md5FilePath = originalFilePath;
+		md5FilePath.ChangeFileExt(_T(".md5"));
+		if (md5.md5txt(originalFilePath.GetFullPath(), &md5FilePath.GetFullPath(), false, (CStatic *)&m_chk_En_CP_Config_File1_Hash, true))
             m_ConfigFileCheck.CP_Config_File1_Hash = true;
         else
             m_ConfigFileCheck.CP_Config_File1_Hash = false;
-        //m_chk_En_CP_Config_File1_Hash.RedrawWindow();
     }
     
     // 2. Firmware.md5
     if (m_chk_En_FirmwareToWrite_Hash.GetCheck())
     {
-        m_ctrlFirmwareFileToWrite.GetWindowText(s);
+        /*
+		m_ctrlFirmwareFileToWrite.GetWindowText(s);
         sfn2 = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath1 + s;
         path1 = ATL::CPath(s);
         path1.RenameExtension(_T(".md5"));
@@ -379,13 +441,23 @@ void CRollnumAndCPConfigDialog::OnBnClickedButton_VerifyHashFiles()
             m_ConfigFileCheck.Program_File_Hash = true;
         else
             m_ConfigFileCheck.Program_File_Hash = false;
-        //m_chk_En_FirmwareToWrite_Hash.RedrawWindow();
+		*/
+
+		CString s;
+		m_ctrlFirmwareFileToWrite.GetWindowText(s);
+		CHgzPath originalFilePath = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath1 + s;
+		CHgzPath md5FilePath = originalFilePath;
+		md5FilePath.ChangeFileExt(_T(".md5"));
+		if (md5.md5bin(originalFilePath.GetFullPath(), &md5FilePath.GetFullPath(), 256, (CStatic *)&m_chk_En_FirmwareToWrite_Hash, true))
+			m_ConfigFileCheck.Program_File_Hash = true;
+		else
+			m_ConfigFileCheck.Program_File_Hash = false;
     }
 
     // 3. CP_Config.File2.md5
     if (m_chk_En_CP_Config_File2_Hash.GetCheck())
     {
-        sfn2 = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath2 + (CString &)s_strConfigFileName2;
+        /*sfn2 = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath2 + (CString &)s_strConfigFileName2;
         path1 = s_strConfigFileName2;
         path1.RenameExtension(_T(".md5"));
         sfn3 = sfn1 + (CString &)path1;
@@ -393,14 +465,22 @@ void CRollnumAndCPConfigDialog::OnBnClickedButton_VerifyHashFiles()
             m_ConfigFileCheck.CP_Config_File2_Hash = true;
         else
             m_ConfigFileCheck.CP_Config_File2_Hash = false;
-        //m_chk_En_CP_Config_File2_Hash.RedrawWindow();
+        */
+
+		CHgzPath originalFilePath = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath2 + (CString &)s_strConfigFileName2;
+		CHgzPath md5FilePath = originalFilePath;
+		md5FilePath.ChangeFileExt(_T(".md5"));
+		if (md5.md5txt(originalFilePath.GetFullPath(), &md5FilePath.GetFullPath(), false, (CStatic *)&m_chk_En_CP_Config_File2_Hash, true))
+			m_ConfigFileCheck.CP_Config_File2_Hash = true;
+		else
+			m_ConfigFileCheck.CP_Config_File2_Hash = false;
     }
 
     // 4. 4_bytes_RF_synccode_file.md5
     do {
         if (m_chk_En_RFSynFile4B_Hash.GetCheck())
         {
-            m_ctrlRFSynccode4BFile.GetWindowText(s);
+            /*m_ctrlRFSynccode4BFile.GetWindowText(s);
             sfn2 = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath2 + s;
             path1 = ATL::CPath(s);
             path1.RenameExtension(_T(".md5"));
@@ -413,8 +493,24 @@ void CRollnumAndCPConfigDialog::OnBnClickedButton_VerifyHashFiles()
             if (md5.md5txt(sfn2, &sfn3, false, (CStatic *)&m_chk_En_RFSynFile4B_Hash, true))
                 m_ConfigFileCheck.RFSynccode4B_Hash = true;
             else
-                m_ConfigFileCheck.RFSynccode4B_Hash = false;
-            //m_chk_En_RFSynFile4B_Hash.RedrawWindow();
+                m_ConfigFileCheck.RFSynccode4B_Hash = false;*/
+            
+			CString s;
+			m_ctrlRFSynccode4BFile.GetWindowText(s);
+			CHgzPath originalFilePath = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath2 + s;
+			CHgzPath md5FilePath = originalFilePath;
+			md5FilePath.ChangeFileExt(_T(".md5"));
+			if (!CheckRFSyncFile(originalFilePath.GetFullPath(), 4, (CStatic *)&m_chk_En_RFSynFile4B_Hash))
+			{
+				m_ConfigFileCheck.RFSynccode4B_Hash = false;
+				break;
+			}
+			if (md5.md5txt(originalFilePath.GetFullPath(), &md5FilePath.GetFullPath(), false, (CStatic *)&m_chk_En_RFSynFile4B_Hash, true))
+				m_ConfigFileCheck.RFSynccode4B_Hash = true;
+			else
+				m_ConfigFileCheck.RFSynccode4B_Hash = false;
+
+
         }
     } while (0);
 
@@ -422,7 +518,7 @@ void CRollnumAndCPConfigDialog::OnBnClickedButton_VerifyHashFiles()
     do {
         if (m_chk_En_RFSynFile3B_Hash.GetCheck())
         {
-            m_ctrlRFSynccode3BFile.GetWindowText(s);
+            /*m_ctrlRFSynccode3BFile.GetWindowText(s);
             sfn2 = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath2 + s;
             path1 = ATL::CPath(s);
             path1.RenameExtension(_T(".md5"));
@@ -435,8 +531,23 @@ void CRollnumAndCPConfigDialog::OnBnClickedButton_VerifyHashFiles()
             if (md5.md5txt(sfn2, &sfn3, false, (CStatic *)&m_chk_En_RFSynFile3B_Hash, true))
                 m_ConfigFileCheck.RFSynccode3B_Hash = true;
             else
-                m_ConfigFileCheck.RFSynccode3B_Hash = false;
-            //m_chk_En_RFSynFile3B_Hash.RedrawWindow();
+                m_ConfigFileCheck.RFSynccode3B_Hash = false;*/
+            
+			CString s;
+			m_ctrlRFSynccode3BFile.GetWindowText(s);
+			CHgzPath originalFilePath = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath2 + s;
+			CHgzPath md5FilePath = originalFilePath;
+			md5FilePath.ChangeFileExt(_T(".md5"));
+			if (!CheckRFSyncFile(originalFilePath.GetFullPath(), 3, (CStatic *)&m_chk_En_RFSynFile3B_Hash))
+			{
+				m_ConfigFileCheck.RFSynccode3B_Hash = false;
+				break;
+			}
+			if (md5.md5txt(originalFilePath.GetFullPath(), &md5FilePath.GetFullPath(), false, (CStatic *)&m_chk_En_RFSynFile3B_Hash, true))
+				m_ConfigFileCheck.RFSynccode3B_Hash = true;
+			else
+				m_ConfigFileCheck.RFSynccode3B_Hash = false;
+
         }
     } while (0);
 
@@ -574,7 +685,7 @@ void CRollnumAndCPConfigDialog::ConfigFile_Parser(void)
         if (CP_Config_File.Open((CString &)m_CPConfigFilePath+(CString &)s_strConfigFilePath1+(CString &)s_strConfigFileName1, CFile::modeRead | CFile::shareDenyNone, &mExcept))
         {
 #if Enable_CP_Config_File_Hash_Check_In_Parser
-            CHgzPath hash_file_name((CString &)m_CPConfigFilePath+(CString &)s_strHashFilePath+(CString &)s_strConfigFileName1);
+            CHgzPath hash_file_name((CString &)m_CPConfigFilePath+(CString &)s_strConfigFilePath1+(CString &)s_strConfigFileName1);
             hash_file_name.ChangeFileExt(_T(".md5"));
             if (CP_Config_File_Hash.Open(hash_file_name.GetFullPath(), CFile::modeRead | CFile::shareDenyNone, &mExcept))
                 m_ConfigFileCheck.CP_Config_File1_Hash = true;
@@ -622,11 +733,11 @@ void CRollnumAndCPConfigDialog::ConfigFile_Parser(void)
             //AfxMessageBox(_T("Warning: Failed to open file: CP_Config_File1.txt.\r\n"));
 			print(0, _T("Warning: Failed to open file: CP_Config_File1.txt.\r\n"));
         }
-
+		
         if (CP_Config_File.Open((CString &)m_CPConfigFilePath+(CString &)s_strConfigFilePath2+(CString &)s_strConfigFileName2, CFile::modeRead | CFile::shareDenyNone, &mExcept))
         {
 #if Enable_CP_Config_File_Hash_Check_In_Parser
-            CHgzPath hash_file_name((CString &)m_CPConfigFilePath+(CString &)s_strHashFilePath+(CString &)s_strConfigFileName2);
+            CHgzPath hash_file_name((CString &)m_CPConfigFilePath+(CString &)s_strConfigFilePath2 +(CString &)s_strConfigFileName2);
             hash_file_name.ChangeFileExt(_T(".md5"));
             if (CP_Config_File_Hash.Open(hash_file_name.GetFullPath(), CFile::modeRead | CFile::shareDenyNone, &mExcept))
                 m_ConfigFileCheck.CP_Config_File2_Hash = true;
@@ -883,8 +994,11 @@ u32 CRollnumAndCPConfigDialog::SD_GetRFSynccode(CString& fileName, u32 rollnum)
 
 void CRollnumAndCPConfigDialog::OnBnClickedOk()
 {
-    OnBnClickedButton_UpdateConfigFile();
-    OnBnClickedButton_ParseConfigFile();
+	//OnBnClickedButton_UpdateConfigFile();
+    //OnBnClickedButton_ParseConfigFile();
+
+	ConfigFile_Parser();
+	UpdateDisplay();
 
     CDialogEx::OnOK();
 }
@@ -923,7 +1037,8 @@ bool CRollnumAndCPConfigDialog::WriteRollnumToConfigFile( void )
     printf(m_vTest_OTPWrite.RadixOfNextRollnumInCfgFile==16 ? "Write rollnum to SD: 0x%08X\r\n" : (m_vTest_OTPWrite.RadixOfNextRollnumInCfgFile==10 ? "Write rollnum to SD: %d\r\n" : "Write rollnum to SD: 0%011o\r\n"), m_vTest_OTPWrite.rsTable.rollnum);
 
     CStdioFile CP_Config_File2;
-    if (CP_Config_File2.Open((CString &)m_CPConfigFilePath+(CString &)s_strConfigFilePath2+(CString &)s_strConfigFileName2, CFile::modeReadWrite | CFile::shareDenyNone | CFile::modeNoTruncate))
+	CHgzPath filePath = (CString &)m_CPConfigFilePath + (CString &)s_strConfigFilePath2 + (CString &)s_strConfigFileName2;
+    if (CP_Config_File2.Open(filePath.GetFullPath(), CFile::modeReadWrite | CFile::shareDenyNone | CFile::modeNoTruncate))
     {
         _tprintf(_T("\r\nWrite into Chip-Probing Config file: %s\r\n"), s_strConfigFileName2);
 
@@ -938,13 +1053,12 @@ bool CRollnumAndCPConfigDialog::WriteRollnumToConfigFile( void )
         CP_Config_File2.Close();
 
         // Update hash file
-        CHgzPath fn = (CString &)m_CPConfigFilePath+(CString &)s_strHashFilePath+(CString &)s_strConfigFileName2;
-        fn.ChangeFileExt(_T(".md5"));
-        if (file_exist(fn.GetFullPath())) //if (m_ConfigFileCheck.CP_Config_File2_Hash)
+        filePath.ChangeFileExt(_T(".md5"));
+        if (file_exist(filePath.GetFullPath())) //if (m_ConfigFileCheck.CP_Config_File2_Hash)
         {
             // CFG_PARAM_NUM-3
             CStdioFile CP_Config_File2_Hash;
-            if (CP_Config_File2_Hash.Open(fn.GetFullPath(), CFile::modeReadWrite | CFile::shareDenyNone | CFile::modeNoTruncate | CFile::typeText))
+            if (CP_Config_File2_Hash.Open(filePath.GetFullPath(), CFile::modeReadWrite | CFile::shareDenyNone | CFile::modeNoTruncate | CFile::typeText))
             {
                 CString s1md5, s2md5;
 
@@ -965,7 +1079,7 @@ bool CRollnumAndCPConfigDialog::WriteRollnumToConfigFile( void )
             }
             else
             {
-                hgzMessageBox(_T("Hash file updating fails: \n%s"), fn.GetFullPath());
+                hgzMessageBox(_T("Hash file updating fails: \n%s"), filePath.GetFullPath());
                 return false;
             }
         }
@@ -1301,4 +1415,20 @@ void CRollnumAndCPConfigDialog::OnEnKillfocusEditCpconfigfilepath()
 {
 	// 配置文件路径编辑框失去焦点时，更新 m_ 变量。
 	GetDlgItemText(IDC_EDIT_CPConfigFilePath, m_CPConfigFilePath);
+}
+
+
+afx_msg LRESULT CRollnumAndCPConfigDialog::OnUserUpdateProgress(WPARAM wParam, LPARAM lParam)
+{
+
+
+	return 0;
+}
+
+
+
+UINT CRollnumAndCPConfigDialog::rf_synccode_file_md5_process(LPVOID pParam)
+{
+
+	return 0;
 }
