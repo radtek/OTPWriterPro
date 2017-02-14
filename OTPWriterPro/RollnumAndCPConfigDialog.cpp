@@ -106,7 +106,7 @@ BEGIN_MESSAGE_MAP(CRollnumAndCPConfigDialog, CDialogEx)
     ON_CBN_SELCHANGE(IDC_COMBO1, &CRollnumAndCPConfigDialog::OnCbnSelchangeCombo1)
 	ON_EN_SETFOCUS(IDC_EDIT13, &CRollnumAndCPConfigDialog::OnEnSetfocusEdit13)
 	ON_EN_KILLFOCUS(IDC_EDIT_CPConfigFilePath, &CRollnumAndCPConfigDialog::OnEnKillfocusEditCpconfigfilepath)
-	ON_MESSAGE(WM_USER_UPDATE_PROGRESS, &CRollnumAndCPConfigDialog::OnUserUpdateProgress)
+	//ON_MESSAGE(WM_USER_UPDATE_PROGRESS, &CRollnumAndCPConfigDialog::OnUserUpdateProgress)
 END_MESSAGE_MAP()
 
 
@@ -1180,7 +1180,7 @@ int CRollnumAndCPConfigDialog::Get_RF_Freq_Group( const int f1, const int f2, co
 bool CRollnumAndCPConfigDialog::CheckParameters( TEST_OTPWRITE_t &cfg, CONFIG_FILE_CHECK_t &check )
 {
     // m_ConfigFileCheck parameters format and range.
-    if (cfg.enableOTPWriting > 3)
+    if (cfg.enableOTPWriting > 4)
     {
         check.CP_Config_File1 = false;
         hgzMessageBox(_T("Warning: Value of \"Enable OTP writing\" out of range: %d\r\n"), cfg.enableOTPWriting);
